@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quant Bot - Stock Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #eee;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid #333;
+            margin-bottom: 30px;
+        }
+        header h1 { font-size: 2.5rem; color: #00d9ff; margin-bottom: 10px; }
+        header p { color: #888; }
+
+        .search-box {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .search-box input {
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: #1a1a2e;
+            color: #fff;
+            width: 300px;
+            text-transform: uppercase;
+        }
+        .search-box input:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+        .search-box button {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            background: #00d9ff;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .search-box button:hover { transform: scale(1.05); }
+
+        .dashboard { display: none; }
+        .dashboard.active { display: block; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #333;
+        }
+        .card h3 { color: #00d9ff; margin-bottom: 15px; font-size: 1.2rem; }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #222;
+        }
+        .metric:last-child { border-bottom: none; }
+        .metric-label { color: #888; }
+        .metric-value { font-weight: bold; }
+        .metric-value.positive { color: #00ff88; }
+        .metric-value.negative { color: #ff4757; }
+
+        .recommendation-box {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #00d9ff22 0%, #00d9ff11 100%);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .recommendation-box h2 { font-size: 2.5rem; color: #00d9ff; }
+        .recommendation-box .score { color: #888; margin-top: 10px; }
+
+        .signal-tag {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin: 3px;
+        }
+        .signal-buy { background: #00ff8833; color: #00ff88; }
+        .signal-sell { background: #ff475733; color: #ff4757; }
+        .signal-neutral { background: #88888833; color: #888; }
+
+        .chart-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .reasons-list { list-style: none; }
+        .reasons-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #222;
+            font-size: 0.95rem;
+        }
+        .reasons-list li:before { content: "→ "; color: #00d9ff; }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+            color: #888;
+        }
+        .error {
+            background: #ff475722;
+            color: #ff4757;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .price-levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .price-level {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        .price-level .label { color: #888; font-size: 0.85rem; }
+        .price-level .price { font-size: 1.3rem; color: #00d9ff; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Quant Bot</h1>
+            <p>AI-Powered Stock Analysis System</p>
+        </header>
+
+        <div class="search-box">
+            <input type="text" id="symbolInput" placeholder="Enter symbol (e.g., AAPL)" value="AAPL">
+            <button onclick="analyze()">Analyze</button>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            Analyzing stock... Please wait...
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="dashboard" class="dashboard">
+            <div id="recommendationBox" class="recommendation-box"></div>
+
+            <div class="grid">
+                <div class="card">
+                    <h3>📈 Quote</h3>
+                    <div id="quoteMetrics"></div>
+                </div>
+
+                <div class="card">
+                    <h3>🔧 Technical Indicators</h3>
+                    <div id="technicalMetrics"></div>
+                </div>
+
+                <div class="card">
+                    <h3>📊 Signals</h3>
+                    <div id="signalsList"></div>
+                </div>
+
+                <div class="card">
+                    <h3>💰 Fundamentals</h3>
+                    <div id="fundamentalMetrics"></div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div id="priceChart"></div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <h3>🤖 ML Prediction</h3>
+                    <div id="mlPrediction"></div>
+                </div>
+
+                <div class="card">
+                    <h3>📋 Key Reasons</h3>
+                    <ul id="reasonsList" class="reasons-list"></ul>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h3>🎯 Entry/Exit Points</h3>
+                <div id="priceLevels" class="price-levels"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function analyze() {
+            const symbol = document.getElementById('symbolInput').value.trim();
+            if (!symbol) return;
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('error').style.display = 'none';
+
+            try {
+                // Fetch analysis
+                const analysisRes = await fetch(`/analyze/${symbol}`);
+                const analysisData = await analysisRes.json();
+
+                if (!analysisData.success) {
+                    throw new Error(analysisData.error);
+                }
+
+                // Fetch chart data
+                const chartRes = await fetch(`/historical/${symbol}`);
+                const chartData = await chartRes.json();
+
+                renderDashboard(analysisData.data, chartData.data);
+            } catch (err) {
+                document.getElementById('error').textContent = `Error: ${err.message}`;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function renderDashboard(data, chartData) {
+            const dash = document.getElementById('dashboard');
+            dash.classList.add('active');
+
+            // Recommendation
+            const rec = data.recommendation;
+            const recColors = {
+                'STRONG BUY': '#00ff88',
+                'BUY': '#00d9ff',
+                'HOLD': '#ffa502',
+                'SELL': '#ff6b81',
+                'STRONG SELL': '#ff4757'
+            };
+            document.getElementById('recommendationBox').innerHTML = `
+                <h2 style="color: ${recColors[rec.recommendation] || '#fff'}">${rec.recommendation}</h2>
+                <div class="score">Composite Score: ${rec.score > 0 ? '+' : ''}${rec.score.toFixed(1)}</div>
+            `;
+
+            // Quote
+            const q = data.quote;
+            const changeClass = q.change >= 0 ? 'positive' : 'negative';
+            const changeSign = q.change >= 0 ? '+' : '';
+            document.getElementById('quoteMetrics').innerHTML = `
+                <div class="metric"><span class="metric-label">Company</span><span class="metric-value">${q.name}</span></div>
+                <div class="metric"><span class="metric-label">Sector</span><span class="metric-value">${q.sector}</span></div>
+                <div class="metric"><span class="metric-label">Price</span><span class="metric-value">$${q.price.toFixed(2)}</span></div>
+                <div class="metric"><span class="metric-label">Change</span><span class="metric-value ${changeClass}">${changeSign}$${q.change.toFixed(2)} (${changeSign}${q.change_pct.toFixed(2)}%)</span></div>
+                <div class="metric"><span class="metric-label">Market Cap</span><span class="metric-value">$${(q.market_cap / 1e9).toFixed(2)}B</span></div>
+            `;
+
+            // Technicals
+            const t = data.technicals;
+            document.getElementById('technicalMetrics').innerHTML = `
+                <div class="metric"><span class="metric-label">SMA 20</span><span class="metric-value">$${t.sma_20?.toFixed(2) || 'N/A'}</span></div>
+                <div class="metric"><span class="metric-label">SMA 50</span><span class="metric-value">$${t.sma_50?.toFixed(2) || 'N/A'}</span></div>
+                <div class="metric"><span class="metric-label">SMA 200</span><span class="metric-value">$${t.sma_200?.toFixed(2) || 'N/A'}</span></div>
+                <div class="metric"><span class="metric-label">RSI</span><span class="metric-value ${t.rsi > 70 ? 'negative' : t.rsi < 30 ? 'positive' : ''}">${t.rsi?.toFixed(2) || 'N/A'}</span></div>
+                <div class="metric"><span class="metric-label">MACD</span><span class="metric-value">${t.macd?.toFixed(4) || 'N/A'}</span></div>
+                <div class="metric"><span class="metric-label">Stochastic</span><span class="metric-value">K=${t.stoch_k?.toFixed(2) || 'N/A'}</span></div>
+            `;
+
+            // Signals
+            let signalsHtml = '';
+            for (const [category, signals] of Object.entries(data.signals)) {
+                if (signals.length > 0) {
+                    signalsHtml += `<strong style="color:#888;text-transform:uppercase;font-size:0.8rem">${category}</strong><br>`;
+                    for (const [type, desc] of signals) {
+                        const cls = type.includes('BUY') || type.includes('BULLISH') || type.includes('OVERSOLD') ? 'signal-buy' :
+                                   type.includes('SELL') || type.includes('BEARISH') || type.includes('OVERBOUGHT') ? 'signal-sell' : 'signal-neutral';
+                        signalsHtml += `<span class="signal-tag ${cls}">${type}</span> `;
+                    }
+                    signalsHtml += `<br><small style="color:#666">${signals[0][1]}</small><br><br>`;
+                }
+            }
+            document.getElementById('signalsList').innerHTML = signalsHtml || '<span style="color:#888">No strong signals</span>';
+
+            // Fundamentals
+            const f = data.fundamentals;
+            document.getElementById('fundamentalMetrics').innerHTML = `
+                <div class="metric"><span class="metric-label">P/E Ratio</span><span class="metric-value">${data.quote.pe_ratio || 'N/A'}</span></div>
+                <div class="metric"><span class="metric-label">Profit Margin</span><span class="metric-value">${(f.profitability?.profit_margin * 100 || 0).toFixed(2)}%</span></div>
+                <div class="metric"><span class="metric-label">ROE</span><span class="metric-value">${(f.profitability?.roe * 100 || 0).toFixed(2)}%</span></div>
+                <div class="metric"><span class="metric-label">Revenue Growth</span><span class="metric-value">${(f.growth?.revenue_growth_yoy * 100 || 0).toFixed(2)}%</span></div>
+                <div class="metric"><span class="metric-label">Debt/Equity</span><span class="metric-value">${f.financial_health?.debt_to_equity || 'N/A'}</span></div>
+            `;
+
+            // ML Prediction
+            const ml = data.ml_prediction;
+            document.getElementById('mlPrediction').innerHTML = `
+                <div class="metric"><span class="metric-label">Direction</span><span class="metric-value ${ml.direction === 'UP' ? 'positive' : 'negative'}">${ml.direction}</span></div>
+                <div class="metric"><span class="metric-label">Confidence</span><span class="metric-value">${ml.confidence}</span></div>
+                <div class="metric"><span class="metric-label">Expected Return</span><span class="metric-value ${ml.predicted_return >= 0 ? 'positive' : 'negative'}">${(ml.predicted_return * 100).toFixed(2)}%</span></div>
+                <div class="metric"><span class="metric-label">Model R²</span><span class="metric-value">${(data.model_metrics.r2 * 100).toFixed(2)}%</span></div>
+            `;
+
+            // Reasons
+            document.getElementById('reasonsList').innerHTML = rec.reasons.slice(0, 8).map(r => `<li>${r}</li>`).join('');
+
+            // Price Levels
+            const pl = data.price_levels;
+            document.getElementById('priceLevels').innerHTML = `
+                <div style="grid-column: 1/-1; margin-bottom: 15px;"><strong style="color:#00d9ff">Entry Zones</strong></div>
+                ${pl.entry_zones.map(l => `<div class="price-level"><div class="label">${l.label}</div><div class="price">$${l.price}</div></div>`).join('')}
+                <div style="grid-column: 1/-1; margin: 15px 0 10px;"><strong style="color:#ffa502">Take Profit Targets</strong></div>
+                ${pl.targets.map(l => `<div class="price-level"><div class="label">${l.label}</div><div class="price">$${l.price}</div></div>`).join('')}
+                <div style="grid-column: 1/-1; margin: 15px 0 10px;"><strong style="color:#ff6b81">Stop Losses</strong></div>
+                ${pl.stop_losses.map(l => `<div class="price-level"><div class="label">${l.label}</div><div class="price">$${l.price}</div></div>`).join('')}
+            `;
+
+            // Price Chart
+            const trace1 = {
+                x: chartData.dates,
+                y: chartData.close,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Price',
+                line: { color: '#00d9ff', width: 2 }
+            };
+            const trace2 = {
+                x: chartData.dates,
+                y: chartData.sma_20,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'SMA 20',
+                line: { color: '#00ff88', width: 1, dash: 'dot' }
+            };
+            const trace3 = {
+                x: chartData.dates,
+                y: chartData.sma_50,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'SMA 50',
+                line: { color: '#ffa502', width: 1, dash: 'dash' }
+            };
+
+            Plotly.newPlot('priceChart', [trace1, trace2, trace3], {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#888' },
+                xaxis: { gridcolor: '#222' },
+                yaxis: { gridcolor: '#222' },
+                margin: { t: 30, l: 50, r: 30, b: 30 },
+                showlegend: true,
+                legend: { font: { color: '#888' } }
+            }, { responsive: true, displayModeBar: false });
+        }
+
+        // Auto-analyze AAPL on load
+        document.addEventListener('DOMContentLoaded', () => analyze());
+
+        // Enter key to search
+        document.getElementById('symbolInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') analyze();
+        });
+    </script>
+</body>
+</html>
