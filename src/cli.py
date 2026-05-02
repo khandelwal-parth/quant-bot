@@ -24,7 +24,7 @@ def format_percent(value: str | float) -> str:
 
 def analyze_stock(symbol: str):
     """Run full analysis on a stock."""
-    symbol = symbol.upper()
+    symbol = data_fetcher.resolve_symbol(symbol)
     print(f"\n{'=' * 60}")
     print(f"  QUANT BOT ANALYSIS: {symbol}")
     print(f"  Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

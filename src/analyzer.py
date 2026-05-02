@@ -230,12 +230,21 @@ def predict_next_day(model, df: pd.DataFrame) -> dict:
 
 def analyze_fundamentals(company_info: dict, income_data: dict) -> dict:
     """Analyze fundamental data."""
+    # Helper to safely convert values to float (handle "N/A" strings and None)
+    def to_float(val, default=0.0):
+        if val is None or val == "N/A" or val == "":
+            return default
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return default
+
     analysis = {}
 
     # Valuation
-    pe_ratio = float(company_info.get("PERatio", 0) or 0)
-    peg_ratio = float(company_info.get("PEGRatio", 0) or 0)
-    pb_ratio = float(company_info.get("PriceToBookRatio", 0) or 0)
+    pe_ratio = to_float(company_info.get("PERatio"))
+    peg_ratio = to_float(company_info.get("PEGRatio"))
+    pb_ratio = to_float(company_info.get("PriceToBookRatio"))
 
     analysis["valuation"] = {
         "pe_ratio": pe_ratio,
@@ -253,9 +262,9 @@ def analyze_fundamentals(company_info: dict, income_data: dict) -> dict:
         analysis["valuation"]["assessment"].append("Good value considering growth (PEG < 1)")
 
     # Profitability
-    profit_margin = float(company_info.get("ProfitMargin", 0) or 0)
-    operating_margin = float(company_info.get("OperatingMarginTTM", 0) or 0)
-    roe = float(company_info.get("ReturnOnEquityTTM", 0) or 0)
+    profit_margin = to_float(company_info.get("ProfitMargin", 0))
+    operating_margin = to_float(company_info.get("OperatingMarginTTM", 0))
+    roe = to_float(company_info.get("ReturnOnEquityTTM", 0))
 
     analysis["profitability"] = {
         "profit_margin": profit_margin,
@@ -273,8 +282,8 @@ def analyze_fundamentals(company_info: dict, income_data: dict) -> dict:
         analysis["profitability"]["assessment"].append("Strong ROE (>15%)")
 
     # Growth
-    revenue_growth = float(company_info.get("QuarterlyRevenueGrowthYOY", 0) or 0)
-    earnings_growth = float(company_info.get("QuarterlyEarningsGrowthYOY", 0) or 0)
+    revenue_growth = to_float(company_info.get("QuarterlyRevenueGrowthYOY", 0))
+    earnings_growth = to_float(company_info.get("QuarterlyEarningsGrowthYOY", 0))
 
     analysis["growth"] = {
         "revenue_growth_yoy": revenue_growth,
@@ -288,8 +297,8 @@ def analyze_fundamentals(company_info: dict, income_data: dict) -> dict:
         analysis["growth"]["assessment"].append("Strong earnings growth (>20% YoY)")
 
     # Financial Health
-    debt_to_equity = float(company_info.get("DebtToEquity", 0) or 0)
-    current_ratio = float(company_info.get("CurrentRatio", 0) or 0)
+    debt_to_equity = to_float(company_info.get("DebtToEquity", 0))
+    current_ratio = to_float(company_info.get("CurrentRatio", 0))
 
     analysis["financial_health"] = {
         "debt_to_equity": debt_to_equity,

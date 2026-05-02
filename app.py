@@ -45,7 +45,7 @@ def index():
 @app.route("/analyze/<symbol>")
 def analyze_symbol(symbol):
     """Analyze a stock symbol and return results."""
-    symbol = symbol.upper()
+    symbol = data_fetcher.resolve_symbol(symbol)
 
     try:
         # Fetch data
@@ -145,6 +145,7 @@ def analyze_symbol(symbol):
 @app.route("/historical/<symbol>")
 def get_historical(symbol):
     """Get historical price data for charting."""
+    symbol = data_fetcher.resolve_symbol(symbol)
     try:
         daily_data = data_fetcher.get_daily_data(symbol, output_size="compact")
         df = data_fetcher.parse_to_dataframe(daily_data)

@@ -1,127 +1,65 @@
-# Quant Bot - AI-Powered Stock Analysis System
+# Quant Bot
 
-A comprehensive stock analysis tool that combines technical indicators, fundamental analysis, and machine learning to generate trading signals and recommendations.
+An AI-powered stock analysis system that delivers institutional-grade analysis in seconds.
+
+## What It Does
+
+Quant Bot analyzes any US stock and provides:
+
+- **Buy/Sell recommendations** with confidence scores
+- **Entry and exit points** with specific price levels
+- **Technical analysis** (RSI, MACD, Moving Averages, Bollinger Bands)
+- **Fundamental analysis** (P/E, PEG, margins, ROE, debt levels)
+- **ML price predictions** for next-day movement
+- **Risk assessment** with stop-loss suggestions
+
+## Quick Start
+
+### Analyze a stock in seconds:
+```bash
+python -m src.cli AAPL
+```
+
+### Or use the web interface:
+```bash
+python app.py
+# Open http://localhost:5000
+```
 
 ## Features
 
-- **Technical Analysis**: RSI, MACD, Moving Averages, Bollinger Bands, Stochastic Oscillator, ATR
-- **Fundamental Analysis**: P/E, PEG, Profit Margins, ROE, Growth metrics, Debt levels
-- **ML Predictions**: Random Forest model for next-day price movement prediction
-- **Trading Signals**: Buy/Sell signals based on multiple indicators
-- **Entry/Exit Points**: Suggested entry zones, take-profit targets, and stop-loss levels
-- **Dual Interface**: CLI for quick analysis + Web dashboard for deep dives
+| Feature | Description |
+|---------|-------------|
+| Technical Analysis | 15+ indicators including RSI, MACD, SMA, Bollinger Bands |
+| Fundamental Analysis | Valuation, profitability, growth, and financial health metrics |
+| ML Predictions | Random Forest model trained on 30+ years of historical data |
+| Trading Signals | Clear buy/sell signals with composite scoring |
+| Price Targets | Specific entry zones, take-profit levels, and stop-losses |
+| Dual Interface | Fast CLI for quick checks, web UI for deep analysis |
 
-## Setup
+## Examples
 
-### 1. Get API Key
-Get a free Alpha Vantage API key: https://www.alphavantage.co/support/#api-key
-
-### 2. Install Dependencies
+**CLI:**
 ```bash
-cd quant-bot
-pip install -r requirements.txt
-```
-
-### 3. Configure API Key
-```bash
-# Copy the example env file
-cp .env.example .env
-
-# Edit .env and add your API key
-ALPHAVANTAGE_API_KEY=your_actual_api_key_here
-```
-
-## Usage
-
-### CLI Mode
-```bash
-# Analyze a stock
 python -m src.cli AAPL
-
-# Examples
 python -m src.cli TSLA
+python -m src.cli NVDA
 python -m src.cli MSFT
-python -m src.cli GOOGL
 ```
 
-### Web Dashboard
-```bash
-# Start the web server
-python app.py
+**Web Dashboard:**
+- Open http://localhost:5000
+- Enter any stock symbol
+- Get instant analysis with interactive charts
 
-# Open browser to http://localhost:5000
-```
+## What You Get
 
-## Output Examples
-
-### CLI Output includes:
-- Company overview
-- Technical indicators with values
-- Trading signals (Buy/Sell/Hold)
-- Fundamental analysis
-- ML prediction with confidence
-- Overall recommendation
-- Entry/Exit price levels
-
-### Web Dashboard shows:
-- Interactive price chart
-- Real-time quote data
-- Technical indicator panel
-- Signal tags (color-coded)
-- Fundamental metrics
-- ML prediction details
-- Key reasons for recommendation
-- Entry/Exit points table
-
-## Project Structure
-
-```
-quant-bot/
-├── src/
-│   ├── __init__.py
-│   ├── __main__.py      # CLI entry point
-│   ├── cli.py           # CLI interface
-│   ├── data_fetcher.py  # Alpha Vantage API client
-│   └── analyzer.py      # Technical/Fundamental/ML analysis
-├── templates/
-│   └── index.html       # Web dashboard
-├── static/              # Static assets (if needed)
-├── data/                # Cached data (if needed)
-├── app.py               # Flask web server
-├── requirements.txt     # Python dependencies
-├── .env.example         # Environment template
-└── README.md
-```
-
-## Indicators & Signals
-
-### Technical Indicators
-| Indicator | Description |
-|-----------|-------------|
-| SMA 20/50/200 | Simple moving averages for trend |
-| EMA 12/26 | Exponential moving averages |
-| MACD | Momentum indicator |
-| RSI | Overbought/Oversold detector |
-| Bollinger Bands | Volatility bands |
-| Stochastic | Momentum comparison |
-| ATR | Volatility measure |
-
-### Signal Types
-- **Trend**: Golden Cross, Death Cross, Price vs SMA
-- **Momentum**: MACD crossovers, RSI levels, Stochastic
-- **Volatility**: Bollinger Band touches
-- **Volume**: Unusual volume detection
-
-### ML Model
-- Random Forest Regressor
-- Predicts next-day return
-- Features: price, volume, indicators, lags, returns
-- Reports R² and feature importance
+For any stock, Quant Bot tells you:
+1. **Should you buy, sell, or hold?** - Clear recommendation
+2. **At what price?** - Specific entry zones
+3. **When to exit?** - Profit targets and stop-loss levels
+4. **Why?** - Key reasons based on technicals, fundamentals, and ML
 
 ## Disclaimer
 
-This tool is for **educational purposes only**. It is not financial advice. Always do your own research and consult with a qualified financial advisor before making investment decisions.
-
-## License
-
-MIT License - feel free to use and modify.
+For educational purposes only. Not financial advice. Always do your own research.

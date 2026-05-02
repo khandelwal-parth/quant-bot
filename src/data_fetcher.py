@@ -11,6 +11,35 @@ API_KEY = os.getenv("ALPHAVANTAGE_API_KEY")
 BASE_URL = "https://www.alphavantage.co/query"
 
 
+def resolve_symbol(symbol: str) -> str:
+    """Intelligently resolve symbol using Yahoo Finance search if no exchange suffix is provided."""
+    # If user already provided an explicit suffix (like .NS, .BO, .L)
+    if "." in symbol:
+        return symbol.upper()
+        
+    try:
+        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={symbol}"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        quotes = data.get('quotes', [])
+        if quotes:
+            # Look for the first equity or ETF
+            for q in quotes:
+                if q.get('quoteType') in ('EQUITY', 'ETF'):
+                    return q.get('symbol', symbol).upper()
+            
+            # Fallback to the very first result if no equity/etf found
+            return quotes[0].get('symbol', symbol).upper()
+            
+    except Exception as e:
+        print(f"Symbol search failed: {e}")
+        
+    # If search fails or returns nothing, just return the original symbol
+    return symbol.upper()
+
 def get_daily_data(symbol: str, output_size: str = "compact") -> dict:
     """Fetch daily OHLCV data for a stock using yfinance.
 
@@ -66,28 +95,33 @@ def get_company_info(symbol: str) -> dict:
         ticker = yf.Ticker(symbol)
         info = ticker.info
 
+        # Helper to handle None values (yfinance returns None, not missing keys)
+        def safe_get(key, default="N/A"):
+            val = info.get(key)
+            return default if val is None else val
+
         # Map yfinance info to our expected format
         return {
             "Symbol": symbol,
-            "Name": info.get("shortName", "N/A"),
-            "Description": info.get("longBusinessSummary", "N/A"),
-            "Sector": info.get("sector", "N/A"),
-            "Industry": info.get("industry", "N/A"),
-            "PERatio": info.get("trailingPE", "N/A"),
-            "PEGRatio": info.get("pegRatio", "N/A"),
-            "PriceToBookRatio": info.get("priceToBook", "N/A"),
-            "ProfitMargin": info.get("profitMargins", 0),
-            "OperatingMarginTTM": info.get("operatingMargins", 0),
-            "ReturnOnEquityTTM": info.get("returnOnEquity", 0),
-            "QuarterlyRevenueGrowthYOY": info.get("revenueGrowth", 0),
-            "QuarterlyEarningsGrowthYOY": info.get("earningsGrowth", 0),
-            "DebtToEquity": info.get("debtToEquity", "N/A"),
-            "CurrentRatio": info.get("currentRatio", "N/A"),
-            "MarketCapitalization": info.get("marketCap", "N/A"),
-            "52WeekHigh": info.get("fiftyTwoWeekHigh", "N/A"),
-            "52WeekLow": info.get("fiftyTwoWeekLow", "N/A"),
-            "DividendYield": info.get("dividendYield", "N/A"),
-            "Beta": info.get("beta", "N/A"),
+            "Name": safe_get("shortName"),
+            "Description": safe_get("longBusinessSummary"),
+            "Sector": safe_get("sector"),
+            "Industry": safe_get("industry"),
+            "PERatio": safe_get("trailingPE"),
+            "PEGRatio": safe_get("pegRatio"),
+            "PriceToBookRatio": safe_get("priceToBook"),
+            "ProfitMargin": safe_get("profitMargins", 0),
+            "OperatingMarginTTM": safe_get("operatingMargins", 0),
+            "ReturnOnEquityTTM": safe_get("returnOnEquity", 0),
+            "QuarterlyRevenueGrowthYOY": safe_get("revenueGrowth", 0),
+            "QuarterlyEarningsGrowthYOY": safe_get("earningsGrowth", 0),
+            "DebtToEquity": safe_get("debtToEquity"),
+            "CurrentRatio": safe_get("currentRatio"),
+            "MarketCapitalization": safe_get("marketCap"),
+            "52WeekHigh": safe_get("fiftyTwoWeekHigh"),
+            "52WeekLow": safe_get("fiftyTwoWeekLow"),
+            "DividendYield": safe_get("dividendYield"),
+            "Beta": safe_get("beta"),
         }
     except Exception as e:
         print(f"yfinance company info failed ({e}), trying Alpha Vantage...")
@@ -137,6 +171,8 @@ def parse_to_dataframe(daily_data: dict) -> "pd.DataFrame":
 
     df = pd.DataFrame.from_dict(daily_data, orient="index")
     df.index = pd.to_datetime(df.index)
-    df = df.astype(float)
+    # Convert to numeric, coercing errors to NaN, then drop any rows with missing values
+    df = df.apply(pd.to_numeric, errors="coerce")
+    df = df.dropna()
     df.columns = ["open", "high", "low", "close", "volume"]
     return df.sort_index()

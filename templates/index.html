@@ -5,163 +5,341 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quant Bot - Stock Analysis</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-            color: #eee;
+        :root {
+            --bg-dark: #09090b;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --border-card: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-glow: #38bdf8;
+            
+            --color-strong-buy: #10b981;
+            --color-buy: #06b6d4;
+            --color-hold: #f59e0b;
+            --color-sell: #f97316;
+            --color-strong-sell: #ef4444;
         }
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text-main);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background Elements */
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.4;
+            animation: float 20s infinite alternate ease-in-out;
+        }
+        .orb-1 {
+            width: 400px; height: 400px;
+            background: #3b82f6;
+            top: -100px; left: -100px;
+        }
+        .orb-2 {
+            width: 500px; height: 500px;
+            background: #8b5cf6;
+            bottom: -200px; right: -100px;
+            animation-delay: -5s;
+        }
+        .orb-3 {
+            width: 300px; height: 300px;
+            background: #0ea5e9;
+            top: 40%; left: 50%; transform: translate(-50%, -50%);
+            animation-duration: 25s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, 50px) scale(1.1); }
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 40px 20px; }
 
         header {
             text-align: center;
-            padding: 30px 0;
-            border-bottom: 1px solid #333;
-            margin-bottom: 30px;
+            margin-bottom: 50px;
         }
-        header h1 { font-size: 2.5rem; color: #00d9ff; margin-bottom: 10px; }
-        header p { color: #888; }
+        header h1 { 
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem; 
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+        header p { color: var(--text-muted); font-size: 1.1rem; }
 
         .search-box {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin-bottom: 30px;
+            gap: 15px;
+            margin-bottom: 50px;
+            position: relative;
+            z-index: 10;
         }
         .search-box input {
-            padding: 15px 25px;
+            padding: 18px 30px;
             font-size: 1.1rem;
-            border: 2px solid #333;
-            border-radius: 8px;
-            background: #1a1a2e;
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
             color: #fff;
-            width: 300px;
+            width: 350px;
             text-transform: uppercase;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
         }
         .search-box input:focus {
             outline: none;
-            border-color: #00d9ff;
+            border-color: var(--accent-glow);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
         }
         .search-box button {
-            padding: 15px 40px;
+            padding: 18px 45px;
             font-size: 1.1rem;
-            background: #00d9ff;
-            color: #1a1a2e;
+            background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%);
+            color: #fff;
             border: none;
-            border-radius: 8px;
+            border-radius: 16px;
             cursor: pointer;
-            font-weight: bold;
-            transition: transform 0.2s;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
         }
-        .search-box button:hover { transform: scale(1.05); }
+        .search-box button:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 25px rgba(56, 189, 248, 0.4);
+        }
 
-        .dashboard { display: none; }
-        .dashboard.active { display: block; }
+        .dashboard { display: none; opacity: 0; transition: opacity 0.5s ease; }
+        .dashboard.active { display: block; opacity: 1; }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
         }
 
         .card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 25px;
-            border: 1px solid #333;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid var(--border-card);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .card h3 { color: #00d9ff; margin-bottom: 15px; font-size: 1.2rem; }
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255,255,255,0.15);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+        }
+        /* Subtle top highlight on cards */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        }
+
+        .card h3 { 
+            font-family: 'Outfit', sans-serif;
+            color: #fff; 
+            margin-bottom: 20px; 
+            font-size: 1.3rem; 
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
         .metric {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #222;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
         .metric:last-child { border-bottom: none; }
-        .metric-label { color: #888; }
-        .metric-value { font-weight: bold; }
-        .metric-value.positive { color: #00ff88; }
-        .metric-value.negative { color: #ff4757; }
+        .metric-label { color: var(--text-muted); font-size: 0.95rem; }
+        .metric-value { font-weight: 500; }
+        .metric-value.positive { color: var(--color-strong-buy); }
+        .metric-value.negative { color: var(--color-strong-sell); }
 
         .recommendation-box {
             text-align: center;
-            padding: 30px;
-            background: linear-gradient(135deg, #00d9ff22 0%, #00d9ff11 100%);
-            border-radius: 12px;
-            margin-bottom: 20px;
+            padding: 40px;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-card);
+            border-radius: 20px;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
         }
-        .recommendation-box h2 { font-size: 2.5rem; color: #00d9ff; }
-        .recommendation-box .score { color: #888; margin-top: 10px; }
+        .recommendation-box::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, transparent 60%);
+            z-index: 0;
+        }
+        .recommendation-content { position: relative; z-index: 1; }
+        
+        .recommendation-box h2 { 
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem; 
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-shadow: 0 0 30px currentColor;
+        }
+        .recommendation-box .score { color: var(--text-muted); margin-top: 15px; font-size: 1.1rem; }
 
         .signal-tag {
             display: inline-block;
-            padding: 5px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
             font-size: 0.85rem;
-            margin: 3px;
+            margin: 4px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            border: 1px solid transparent;
         }
-        .signal-buy { background: #00ff8833; color: #00ff88; }
-        .signal-sell { background: #ff475733; color: #ff4757; }
-        .signal-neutral { background: #88888833; color: #888; }
+        .signal-buy { background: rgba(16, 185, 129, 0.1); color: var(--color-strong-buy); border-color: rgba(16, 185, 129, 0.2); }
+        .signal-sell { background: rgba(239, 68, 68, 0.1); color: var(--color-strong-sell); border-color: rgba(239, 68, 68, 0.2); }
+        .signal-neutral { background: rgba(148, 163, 184, 0.1); color: var(--text-muted); border-color: rgba(148, 163, 184, 0.2); }
 
         .chart-container {
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid var(--border-card);
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
         .reasons-list { list-style: none; }
         .reasons-list li {
-            padding: 8px 0;
-            border-bottom: 1px solid #222;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
             font-size: 0.95rem;
+            color: #cbd5e1;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
         }
-        .reasons-list li:before { content: "→ "; color: #00d9ff; }
+        .reasons-list li:last-child { border-bottom: none; }
+        .reasons-list li:before { 
+            content: "✦"; 
+            color: var(--accent-glow); 
+            font-size: 1.2rem;
+            line-height: 1;
+        }
 
         .loading {
             text-align: center;
-            padding: 50px;
-            font-size: 1.2rem;
-            color: #888;
+            padding: 80px 0;
         }
+        /* Animated pulsing loader */
+        .spinner {
+            width: 50px; height: 50px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: var(--accent-glow);
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .loading-text {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            font-family: 'Outfit', sans-serif;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 50% { opacity: 0.5; } }
+
         .error {
-            background: #ff475722;
-            color: #ff4757;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-strong-sell);
             padding: 20px;
-            border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 12px;
             margin: 20px 0;
+            text-align: center;
+            backdrop-filter: blur(10px);
         }
 
-        .price-levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .price-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
         .price-level {
             text-align: center;
-            padding: 15px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 8px;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.3s;
         }
-        .price-level .label { color: #888; font-size: 0.85rem; }
-        .price-level .price { font-size: 1.3rem; color: #00d9ff; margin-top: 5px; }
+        .price-level:hover { transform: translateY(-3px); background: rgba(0,0,0,0.4); }
+        .price-level .label { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .price-level .price { font-size: 1.6rem; color: #fff; margin-top: 8px; font-family: 'Outfit', sans-serif; font-weight: 700; }
+        
+        /* Section headers in price levels */
+        .level-header {
+            grid-column: 1/-1;
+            margin: 20px 0 5px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .level-header::after {
+            content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.05);
+        }
     </style>
 </head>
 <body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+
     <div class="container">
         <header>
-            <h1>📊 Quant Bot</h1>
-            <p>AI-Powered Stock Analysis System</p>
+            <h1>Quant Bot</h1>
+            <p>Institutional-Grade AI Stock Analysis</p>
         </header>
 
         <div class="search-box">
-            <input type="text" id="symbolInput" placeholder="Enter symbol (e.g., AAPL)" value="AAPL">
+            <input type="text" id="symbolInput" placeholder="Enter symbol (e.g. AAPL, SBIN.NS)" value="AAPL">
             <button onclick="analyze()">Analyze</button>
         </div>
 
         <div id="loading" class="loading" style="display: none;">
-            Analyzing stock... Please wait...
+            <div class="spinner"></div>
+            <div class="loading-text">Running full market analysis...</div>
         </div>
 
         <div id="error" class="error" style="display: none;"></div>
@@ -171,7 +349,7 @@
 
             <div class="grid">
                 <div class="card">
-                    <h3>📈 Quote</h3>
+                    <h3>📈 Market Quote</h3>
                     <div id="quoteMetrics"></div>
                 </div>
 
@@ -181,7 +359,7 @@
                 </div>
 
                 <div class="card">
-                    <h3>📊 Signals</h3>
+                    <h3>📊 Live Signals</h3>
                     <div id="signalsList"></div>
                 </div>
 
@@ -197,18 +375,18 @@
 
             <div class="grid">
                 <div class="card">
-                    <h3>🤖 ML Prediction</h3>
+                    <h3>🤖 AI Prediction Model</h3>
                     <div id="mlPrediction"></div>
                 </div>
 
                 <div class="card">
-                    <h3>📋 Key Reasons</h3>
+                    <h3>📋 Analysis Breakdown</h3>
                     <ul id="reasonsList" class="reasons-list"></ul>
                 </div>
             </div>
 
-            <div class="card" style="margin-top: 20px;">
-                <h3>🎯 Entry/Exit Points</h3>
+            <div class="card" style="margin-top: 25px;">
+                <h3>🎯 Strategic Price Levels</h3>
                 <div id="priceLevels" class="price-levels"></div>
             </div>
         </div>
@@ -252,15 +430,17 @@
             // Recommendation
             const rec = data.recommendation;
             const recColors = {
-                'STRONG BUY': '#00ff88',
-                'BUY': '#00d9ff',
-                'HOLD': '#ffa502',
-                'SELL': '#ff6b81',
-                'STRONG SELL': '#ff4757'
+                'STRONG BUY': 'var(--color-strong-buy)',
+                'BUY': 'var(--color-buy)',
+                'HOLD': 'var(--color-hold)',
+                'SELL': 'var(--color-sell)',
+                'STRONG SELL': 'var(--color-strong-sell)'
             };
             document.getElementById('recommendationBox').innerHTML = `
-                <h2 style="color: ${recColors[rec.recommendation] || '#fff'}">${rec.recommendation}</h2>
-                <div class="score">Composite Score: ${rec.score > 0 ? '+' : ''}${rec.score.toFixed(1)}</div>
+                <div class="recommendation-content">
+                    <h2 style="color: ${recColors[rec.recommendation] || '#fff'}">${rec.recommendation}</h2>
+                    <div class="score">Composite Confidence Score: ${rec.score > 0 ? '+' : ''}${rec.score.toFixed(1)}</div>
+                </div>
             `;
 
             // Quote
@@ -268,11 +448,11 @@
             const changeClass = q.change >= 0 ? 'positive' : 'negative';
             const changeSign = q.change >= 0 ? '+' : '';
             document.getElementById('quoteMetrics').innerHTML = `
-                <div class="metric"><span class="metric-label">Company</span><span class="metric-value">${q.name}</span></div>
+                <div class="metric"><span class="metric-label">Asset</span><span class="metric-value">${data.symbol}</span></div>
+                <div class="metric"><span class="metric-label">Company</span><span class="metric-value" style="text-align:right;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${q.name}">${q.name}</span></div>
                 <div class="metric"><span class="metric-label">Sector</span><span class="metric-value">${q.sector}</span></div>
-                <div class="metric"><span class="metric-label">Price</span><span class="metric-value">$${q.price.toFixed(2)}</span></div>
+                <div class="metric"><span class="metric-label">Price</span><span class="metric-value" style="font-size:1.1rem;color:#fff">$${q.price.toFixed(2)}</span></div>
                 <div class="metric"><span class="metric-label">Change</span><span class="metric-value ${changeClass}">${changeSign}$${q.change.toFixed(2)} (${changeSign}${q.change_pct.toFixed(2)}%)</span></div>
-                <div class="metric"><span class="metric-label">Market Cap</span><span class="metric-value">$${(q.market_cap / 1e9).toFixed(2)}B</span></div>
             `;
 
             // Technicals
@@ -281,7 +461,7 @@
                 <div class="metric"><span class="metric-label">SMA 20</span><span class="metric-value">$${t.sma_20?.toFixed(2) || 'N/A'}</span></div>
                 <div class="metric"><span class="metric-label">SMA 50</span><span class="metric-value">$${t.sma_50?.toFixed(2) || 'N/A'}</span></div>
                 <div class="metric"><span class="metric-label">SMA 200</span><span class="metric-value">$${t.sma_200?.toFixed(2) || 'N/A'}</span></div>
-                <div class="metric"><span class="metric-label">RSI</span><span class="metric-value ${t.rsi > 70 ? 'negative' : t.rsi < 30 ? 'positive' : ''}">${t.rsi?.toFixed(2) || 'N/A'}</span></div>
+                <div class="metric"><span class="metric-label">RSI (14)</span><span class="metric-value ${t.rsi > 70 ? 'negative' : t.rsi < 30 ? 'positive' : ''}">${t.rsi?.toFixed(2) || 'N/A'}</span></div>
                 <div class="metric"><span class="metric-label">MACD</span><span class="metric-value">${t.macd?.toFixed(4) || 'N/A'}</span></div>
                 <div class="metric"><span class="metric-label">Stochastic</span><span class="metric-value">K=${t.stoch_k?.toFixed(2) || 'N/A'}</span></div>
             `;
@@ -290,16 +470,17 @@
             let signalsHtml = '';
             for (const [category, signals] of Object.entries(data.signals)) {
                 if (signals.length > 0) {
-                    signalsHtml += `<strong style="color:#888;text-transform:uppercase;font-size:0.8rem">${category}</strong><br>`;
+                    signalsHtml += `<div style="margin-bottom: 12px;">
+                        <strong style="color:var(--text-muted);text-transform:uppercase;font-size:0.75rem;letter-spacing:1px;">${category}</strong><br>`;
                     for (const [type, desc] of signals) {
                         const cls = type.includes('BUY') || type.includes('BULLISH') || type.includes('OVERSOLD') ? 'signal-buy' :
                                    type.includes('SELL') || type.includes('BEARISH') || type.includes('OVERBOUGHT') ? 'signal-sell' : 'signal-neutral';
-                        signalsHtml += `<span class="signal-tag ${cls}">${type}</span> `;
+                        signalsHtml += `<span class="signal-tag ${cls}" title="${desc}">${type}</span> `;
                     }
-                    signalsHtml += `<br><small style="color:#666">${signals[0][1]}</small><br><br>`;
+                    signalsHtml += `</div>`;
                 }
             }
-            document.getElementById('signalsList').innerHTML = signalsHtml || '<span style="color:#888">No strong signals</span>';
+            document.getElementById('signalsList').innerHTML = signalsHtml || '<div style="color:var(--text-muted);text-align:center;padding:20px;">No clear market signals detected</div>';
 
             // Fundamentals
             const f = data.fundamentals;
@@ -307,17 +488,17 @@
                 <div class="metric"><span class="metric-label">P/E Ratio</span><span class="metric-value">${data.quote.pe_ratio || 'N/A'}</span></div>
                 <div class="metric"><span class="metric-label">Profit Margin</span><span class="metric-value">${(f.profitability?.profit_margin * 100 || 0).toFixed(2)}%</span></div>
                 <div class="metric"><span class="metric-label">ROE</span><span class="metric-value">${(f.profitability?.roe * 100 || 0).toFixed(2)}%</span></div>
-                <div class="metric"><span class="metric-label">Revenue Growth</span><span class="metric-value">${(f.growth?.revenue_growth_yoy * 100 || 0).toFixed(2)}%</span></div>
+                <div class="metric"><span class="metric-label">Revenue Growth</span><span class="metric-value ${f.growth?.revenue_growth_yoy > 0 ? 'positive' : 'negative'}">${(f.growth?.revenue_growth_yoy * 100 || 0).toFixed(2)}%</span></div>
                 <div class="metric"><span class="metric-label">Debt/Equity</span><span class="metric-value">${f.financial_health?.debt_to_equity || 'N/A'}</span></div>
             `;
 
             // ML Prediction
             const ml = data.ml_prediction;
             document.getElementById('mlPrediction').innerHTML = `
-                <div class="metric"><span class="metric-label">Direction</span><span class="metric-value ${ml.direction === 'UP' ? 'positive' : 'negative'}">${ml.direction}</span></div>
-                <div class="metric"><span class="metric-label">Confidence</span><span class="metric-value">${ml.confidence}</span></div>
-                <div class="metric"><span class="metric-label">Expected Return</span><span class="metric-value ${ml.predicted_return >= 0 ? 'positive' : 'negative'}">${(ml.predicted_return * 100).toFixed(2)}%</span></div>
-                <div class="metric"><span class="metric-label">Model R²</span><span class="metric-value">${(data.model_metrics.r2 * 100).toFixed(2)}%</span></div>
+                <div class="metric"><span class="metric-label">Predicted Direction</span><span class="metric-value ${ml.direction === 'UP' ? 'positive' : 'negative'}">${ml.direction}</span></div>
+                <div class="metric"><span class="metric-label">Model Confidence</span><span class="metric-value">${ml.confidence}</span></div>
+                <div class="metric"><span class="metric-label">Expected Next Day</span><span class="metric-value ${ml.predicted_return >= 0 ? 'positive' : 'negative'}">${(ml.predicted_return * 100).toFixed(2)}%</span></div>
+                <div class="metric"><span class="metric-label">Historical Accuracy (R²)</span><span class="metric-value">${(data.model_metrics.r2 * 100).toFixed(2)}%</span></div>
             `;
 
             // Reasons
@@ -326,12 +507,14 @@
             // Price Levels
             const pl = data.price_levels;
             document.getElementById('priceLevels').innerHTML = `
-                <div style="grid-column: 1/-1; margin-bottom: 15px;"><strong style="color:#00d9ff">Entry Zones</strong></div>
-                ${pl.entry_zones.map(l => `<div class="price-level"><div class="label">${l.label}</div><div class="price">$${l.price}</div></div>`).join('')}
-                <div style="grid-column: 1/-1; margin: 15px 0 10px;"><strong style="color:#ffa502">Take Profit Targets</strong></div>
-                ${pl.targets.map(l => `<div class="price-level"><div class="label">${l.label}</div><div class="price">$${l.price}</div></div>`).join('')}
-                <div style="grid-column: 1/-1; margin: 15px 0 10px;"><strong style="color:#ff6b81">Stop Losses</strong></div>
-                ${pl.stop_losses.map(l => `<div class="price-level"><div class="label">${l.label}</div><div class="price">$${l.price}</div></div>`).join('')}
+                <div class="level-header" style="color:var(--color-buy)">Accumulation Zones</div>
+                ${pl.entry_zones.map(l => `<div class="price-level"><div class="label">${l.label}</div><div class="price">$${l.price.toFixed(2)}</div></div>`).join('')}
+                
+                <div class="level-header" style="color:var(--color-hold)">Take Profit Targets</div>
+                ${pl.targets.map(l => `<div class="price-level"><div class="label">${l.label}</div><div class="price">$${l.price.toFixed(2)}</div></div>`).join('')}
+                
+                <div class="level-header" style="color:var(--color-strong-sell)">Risk Management</div>
+                ${pl.stop_losses.map(l => `<div class="price-level"><div class="label">${l.label}</div><div class="price">$${l.price.toFixed(2)}</div></div>`).join('')}
             `;
 
             // Price Chart
@@ -341,7 +524,9 @@
                 type: 'scatter',
                 mode: 'lines',
                 name: 'Price',
-                line: { color: '#00d9ff', width: 2 }
+                line: { color: '#e2e8f0', width: 2 },
+                fill: 'tozeroy',
+                fillcolor: 'rgba(226, 232, 240, 0.05)'
             };
             const trace2 = {
                 x: chartData.dates,
@@ -349,7 +534,7 @@
                 type: 'scatter',
                 mode: 'lines',
                 name: 'SMA 20',
-                line: { color: '#00ff88', width: 1, dash: 'dot' }
+                line: { color: '#06b6d4', width: 1.5, dash: 'dot' }
             };
             const trace3 = {
                 x: chartData.dates,
@@ -357,18 +542,19 @@
                 type: 'scatter',
                 mode: 'lines',
                 name: 'SMA 50',
-                line: { color: '#ffa502', width: 1, dash: 'dash' }
+                line: { color: '#f59e0b', width: 1.5, dash: 'dash' }
             };
 
             Plotly.newPlot('priceChart', [trace1, trace2, trace3], {
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: '#888' },
-                xaxis: { gridcolor: '#222' },
-                yaxis: { gridcolor: '#222' },
-                margin: { t: 30, l: 50, r: 30, b: 30 },
+                font: { color: '#94a3b8', family: 'Inter' },
+                xaxis: { gridcolor: 'rgba(255,255,255,0.05)', zeroline: false },
+                yaxis: { gridcolor: 'rgba(255,255,255,0.05)', zeroline: false },
+                margin: { t: 10, l: 50, r: 20, b: 40 },
                 showlegend: true,
-                legend: { font: { color: '#888' } }
+                legend: { orientation: 'h', y: 1.1, font: { color: '#94a3b8' } },
+                hovermode: 'x unified'
             }, { responsive: true, displayModeBar: false });
         }
 
