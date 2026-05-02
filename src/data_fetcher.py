@@ -49,7 +49,7 @@ def get_daily_data(symbol: str, output_size: str = "compact") -> dict:
     try:
         import yfinance as yf
         ticker = yf.Ticker(symbol)
-        hist = ticker.history(period="max")
+        hist = ticker.history(period="2y")
         if hist.empty:
             raise ValueError(f"No data returned for {symbol}")
 
