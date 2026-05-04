@@ -26,13 +26,31 @@ def resolve_symbol(symbol: str) -> str:
         
         quotes = data.get('quotes', [])
         if quotes:
-            # Look for the first equity or ETF
+            # 1. Filter for Equities only first (prioritize stocks over ETFs)
+            equities = [q for q in quotes if q.get('quoteType') == 'EQUITY']
+            
+            # 2. Look for an exact ticker match (e.g., if user typed SBIN, look for SBIN.NS or SBIN.BO)
+            best_match = None
+            for q in equities:
+                q_symbol = q.get('symbol', '').upper()
+                if q_symbol == symbol.upper() or q_symbol.startswith(f"{symbol.upper()}."):
+                    # Favor National Stock Exchange (.NS) if available
+                    if q_symbol.endswith('.NS'):
+                        return q_symbol
+                    if best_match is None:
+                        best_match = q_symbol
+            
+            if best_match:
+                return best_match
+
+            # 3. Fallback to first Equity found
+            if equities:
+                return equities[0].get('symbol').upper()
+                
+            # 4. Final fallback to any ETF or result
             for q in quotes:
                 if q.get('quoteType') in ('EQUITY', 'ETF'):
-                    return q.get('symbol', symbol).upper()
-            
-            # Fallback to the very first result if no equity/etf found
-            return quotes[0].get('symbol', symbol).upper()
+                    return q.get('symbol').upper()
             
     except Exception as e:
         print(f"Symbol search failed: {e}")
