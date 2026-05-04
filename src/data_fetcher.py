@@ -173,28 +173,72 @@ def _get_av_company_info(symbol: str) -> dict:
 
 
 def get_income_statement(symbol: str) -> dict:
-    """Fetch annual income statement."""
-    params = {
-        "function": "INCOME_STATEMENT",
-        "symbol": symbol,
-        "apikey": API_KEY,
-    }
-    response = requests.get(BASE_URL, params=params)
-    response.raise_for_status()
-    return response.json()
+    """Fetch annual income statement using yfinance primarily."""
+    try:
+        import yfinance as yf
+        import requests
+        session = requests.Session()
+        session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'})
+        
+        ticker = yf.Ticker(symbol, session=session)
+        stmt = ticker.income_stmt
+        
+        if stmt.empty:
+            raise ValueError("No income statement found")
+            
+        # Convert yfinance format to a simplified dict for our analyzer
+        # We just need the most recent year's data
+        latest = stmt.iloc[:, 0]
+        return {
+            "annualReports": [{
+                "totalRevenue": latest.get("Total Revenue", 0),
+                "netIncome": latest.get("Net Income", 0)
+            }]
+        }
+    except Exception as e:
+        print(f"yfinance income stmt failed ({e}), falling back to Alpha Vantage...")
+        params = {
+            "function": "INCOME_STATEMENT",
+            "symbol": symbol,
+            "apikey": API_KEY,
+        }
+        response = requests.get(BASE_URL, params=params)
+        return response.json()
 
 
 def get_quote(symbol: str) -> dict:
-    """Fetch real-time quote."""
-    params = {
-        "function": "GLOBAL_QUOTE",
-        "symbol": symbol,
-        "apikey": API_KEY,
-    }
-    response = requests.get(BASE_URL, params=params)
-    response.raise_for_status()
-    data = response.json()
-    return data.get("Global Quote", {})
+    """Fetch real-time quote using yfinance primarily."""
+    try:
+        import yfinance as yf
+        import requests
+        session = requests.Session()
+        session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'})
+        
+        ticker = yf.Ticker(symbol, session=session)
+        info = ticker.info
+        
+        # Map yfinance info to Alpha Vantage Global Quote format
+        price = info.get("currentPrice") or info.get("regularMarketPrice") or 0
+        prev_close = info.get("previousClose") or price
+        change = price - prev_close
+        change_pct = (change / prev_close) * 100 if prev_close != 0 else 0
+        
+        return {
+            "01. symbol": symbol,
+            "05. price": price,
+            "09. change": change,
+            "10. change percent": f"{change_pct:.2f}%"
+        }
+    except Exception as e:
+        print(f"yfinance quote failed ({e}), falling back to Alpha Vantage...")
+        params = {
+            "function": "GLOBAL_QUOTE",
+            "symbol": symbol,
+            "apikey": API_KEY,
+        }
+        response = requests.get(BASE_URL, params=params)
+        data = response.json()
+        return data.get("Global Quote", {})
 
 
 def parse_to_dataframe(daily_data: dict) -> "pd.DataFrame":
