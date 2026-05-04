@@ -44,34 +44,17 @@ def index():
 
 @app.route("/analyze/<symbol>")
 def analyze_symbol(symbol):
+    """Analyze a stock symbol and return results."""
+    symbol = data_fetcher.resolve_symbol(symbol)
+
     try:
-        # Resolve symbol (e.g., AAPL -> AAPL, SBIN -> SBIN.NS)
-        resolved_symbol = data_fetcher.resolve_symbol(symbol)
-        
-        # 1. Fetch Daily Data (Critical)
-        daily_data = data_fetcher.get_daily_data(resolved_symbol)
+        # Fetch data
+        daily_data = data_fetcher.get_daily_data(symbol)
+        company_info = data_fetcher.get_company_info(symbol)
+        quote = data_fetcher.get_quote(symbol)
+
+        # Process data
         df = data_fetcher.parse_to_dataframe(daily_data)
-        
-        # 2. Fetch Company Info (Optional)
-        try:
-            company_info = data_fetcher.get_company_info(resolved_symbol)
-        except Exception as e:
-            print(f"Company info failed: {e}")
-            company_info = {"Symbol": resolved_symbol, "Name": resolved_symbol}
-            
-        # 3. Fetch Income Statement (Optional)
-        try:
-            income_data = data_fetcher.get_income_statement(resolved_symbol)
-        except Exception as e:
-            print(f"Income data failed: {e}")
-            income_data = {}
-            
-        # 4. Fetch Real-time Quote (Optional)
-        try:
-            quote = data_fetcher.get_quote(resolved_symbol)
-        except Exception as e:
-            print(f"Quote failed: {e}")
-            quote = {}
         df = analyzer.add_technical_indicators(df)
 
         # Generate analysis
