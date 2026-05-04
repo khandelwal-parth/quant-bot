@@ -66,7 +66,12 @@ def get_daily_data(symbol: str, output_size: str = "compact") -> dict:
     """
     try:
         import yfinance as yf
-        ticker = yf.Ticker(symbol)
+        import requests
+        
+        session = requests.Session()
+        session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'})
+        
+        ticker = yf.Ticker(symbol, session=session)
         hist = ticker.history(period="2y")
         if hist.empty:
             raise ValueError(f"No data returned for {symbol}")
@@ -110,22 +115,31 @@ def get_company_info(symbol: str) -> dict:
     """Fetch company profile and fundamental data using yfinance."""
     try:
         import yfinance as yf
-        ticker = yf.Ticker(symbol)
+        import requests
+        
+        # Use a session with a custom User-Agent to avoid being blocked by Yahoo
+        session = requests.Session()
+        session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'})
+        
+        ticker = yf.Ticker(symbol, session=session)
         info = ticker.info
 
-        # Helper to handle None values (yfinance returns None, not missing keys)
+        # Helper to handle None values
         def safe_get(key, default="N/A"):
             val = info.get(key)
             return default if val is None else val
 
         # Map yfinance info to our expected format
+        # Try shortName, then longName, then symbol
+        name = info.get("shortName") or info.get("longName") or symbol
+        
         return {
             "Symbol": symbol,
-            "Name": safe_get("shortName"),
+            "Name": name,
             "Description": safe_get("longBusinessSummary"),
             "Sector": safe_get("sector"),
             "Industry": safe_get("industry"),
-            "PERatio": safe_get("trailingPE"),
+            "PERatio": safe_get("trailingPE") or safe_get("forwardPE"),
             "PEGRatio": safe_get("pegRatio"),
             "PriceToBookRatio": safe_get("priceToBook"),
             "ProfitMargin": safe_get("profitMargins", 0),
