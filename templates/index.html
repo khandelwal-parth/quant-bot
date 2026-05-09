@@ -3,568 +3,497 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quant Bot - Stock Analysis</title>
+    <title>Quant Bot — Institutional-Grade AI Stock Analysis</title>
+    <meta name="description" content="Enter any ticker symbol and receive comprehensive quantitative analysis powered by algorithms used at top-tier institutions.">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #09090b;
-            --bg-card: rgba(255, 255, 255, 0.03);
-            --border-card: rgba(255, 255, 255, 0.08);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent-glow: #38bdf8;
-            
-            --color-strong-buy: #10b981;
-            --color-buy: #06b6d4;
-            --color-hold: #f59e0b;
-            --color-sell: #f97316;
-            --color-strong-sell: #ef4444;
+            --bg: #f5f4f0;
+            --bg-card: #ffffff;
+            --border: #e0ddd6;
+            --text: #1a1a18;
+            --text-muted: #7a7971;
+            --accent: #c8a96e;
+            --accent-dark: #8b5e2a;
+            --color-buy: #1a6640;
+            --color-sell: #8b1a1a;
+            --color-hold: #6b5a1a;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
+            background-color: var(--bg);
+            color: var(--text);
             min-height: 100vh;
-            color: var(--text-main);
-            position: relative;
-            overflow-x: hidden;
         }
 
-        /* Animated Background Elements */
-        .bg-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(120px);
-            z-index: -1;
-            opacity: 0.4;
-            animation: float 20s infinite alternate ease-in-out;
-        }
-        .orb-1 {
-            width: 400px; height: 400px;
-            background: #3b82f6;
-            top: -100px; left: -100px;
-        }
-        .orb-2 {
-            width: 500px; height: 500px;
-            background: #8b5cf6;
-            bottom: -200px; right: -100px;
-            animation-delay: -5s;
-        }
-        .orb-3 {
-            width: 300px; height: 300px;
-            background: #0ea5e9;
-            top: 40%; left: 50%; transform: translate(-50%, -50%);
-            animation-duration: 25s;
-        }
-
-        @keyframes float {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(50px, 50px) scale(1.1); }
-        }
-
-        .container { max-width: 1400px; margin: 0 auto; padding: 40px 20px; }
-
-        header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-        header h1 { 
-            font-family: 'Outfit', sans-serif;
-            font-size: 3.5rem; 
-            font-weight: 800;
-            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-            letter-spacing: -1px;
-        }
-        header p { color: var(--text-muted); font-size: 1.1rem; }
-
-        .search-box {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 50px;
-            position: relative;
-            z-index: 10;
-        }
-        .search-box input {
-            padding: 18px 30px;
-            font-size: 1.1rem;
-            border: 1px solid var(--border-card);
-            border-radius: 16px;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(20px);
-            color: #fff;
-            width: 350px;
-            text-transform: uppercase;
-            font-family: 'Inter', sans-serif;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-        }
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--accent-glow);
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
-        }
-        .search-box button {
-            padding: 18px 45px;
-            font-size: 1.1rem;
-            background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%);
-            color: #fff;
-            border: none;
-            border-radius: 16px;
-            cursor: pointer;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
-        }
-        .search-box button:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 8px 25px rgba(56, 189, 248, 0.4);
-        }
-
-        .dashboard { display: none; opacity: 0; transition: opacity 0.5s ease; }
-        .dashboard.active { display: block; opacity: 1; }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 25px;
-            margin-bottom: 25px;
-        }
-
-        .card {
-            background: var(--bg-card);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-radius: 20px;
-            padding: 30px;
-            border: 1px solid var(--border-card);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(255,255,255,0.15);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
-        }
-        /* Subtle top highlight on cards */
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        }
-
-        .card h3 { 
-            font-family: 'Outfit', sans-serif;
-            color: #fff; 
-            margin-bottom: 20px; 
-            font-size: 1.3rem; 
-            font-weight: 600;
+        /* ─── NAV ─── */
+        nav {
             display: flex;
             align-items: center;
-            gap: 10px;
-        }
-
-        .metric {
-            display: flex;
             justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 20px 60px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        .metric:last-child { border-bottom: none; }
-        .metric-label { color: var(--text-muted); font-size: 0.95rem; }
-        .metric-value { font-weight: 500; }
-        .metric-value.positive { color: var(--color-strong-buy); }
-        .metric-value.negative { color: var(--color-strong-sell); }
-
-        .recommendation-box {
-            text-align: center;
-            padding: 40px;
-            background: var(--bg-card);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--border-card);
-            border-radius: 20px;
-            margin-bottom: 25px;
-            position: relative;
-            overflow: hidden;
-        }
-        .recommendation-box::before {
-            content: '';
-            position: absolute;
-            top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, transparent 60%);
-            z-index: 0;
-        }
-        .recommendation-content { position: relative; z-index: 1; }
-        
-        .recommendation-box h2 { 
-            font-family: 'Outfit', sans-serif;
-            font-size: 3.5rem; 
-            font-weight: 800;
-            letter-spacing: 2px;
-            text-shadow: 0 0 30px currentColor;
-        }
-        .recommendation-box .score { color: var(--text-muted); margin-top: 15px; font-size: 1.1rem; }
-
-        .signal-tag {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            margin: 4px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            border: 1px solid transparent;
-        }
-        .signal-buy { background: rgba(16, 185, 129, 0.1); color: var(--color-strong-buy); border-color: rgba(16, 185, 129, 0.2); }
-        .signal-sell { background: rgba(239, 68, 68, 0.1); color: var(--color-strong-sell); border-color: rgba(239, 68, 68, 0.2); }
-        .signal-neutral { background: rgba(148, 163, 184, 0.1); color: var(--text-muted); border-color: rgba(148, 163, 184, 0.2); }
-
-        .chart-container {
-            background: var(--bg-card);
-            backdrop-filter: blur(16px);
-            border-radius: 20px;
-            padding: 25px;
-            border: 1px solid var(--border-card);
-            margin-bottom: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .reasons-list { list-style: none; }
-        .reasons-list li {
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-size: 0.95rem;
-            color: #cbd5e1;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-        .reasons-list li:last-child { border-bottom: none; }
-        .reasons-list li:before { 
-            content: "✦"; 
-            color: var(--accent-glow); 
-            font-size: 1.2rem;
-            line-height: 1;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 80px 0;
-        }
-        /* Animated pulsing loader */
-        .spinner {
-            width: 50px; height: 50px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
-            border-top-color: var(--accent-glow);
-            animation: spin 1s ease-in-out infinite;
-            margin: 0 auto 20px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .loading-text {
-            color: var(--text-muted);
-            font-size: 1.2rem;
-            font-family: 'Outfit', sans-serif;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse { 50% { opacity: 0.5; } }
-
-        .error {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--color-strong-sell);
-            padding: 20px;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 12px;
-            margin: 20px 0;
-            text-align: center;
-            backdrop-filter: blur(10px);
-        }
-
-        .price-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-        .price-level {
-            text-align: center;
-            padding: 20px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: transform 0.3s;
-        }
-        .price-level:hover { transform: translateY(-3px); background: rgba(0,0,0,0.4); }
-        .price-level .label { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
-        .price-level .price { font-size: 1.6rem; color: #fff; margin-top: 8px; font-family: 'Outfit', sans-serif; font-weight: 700; }
-        
-        /* Section headers in price levels */
-        .level-header {
-            grid-column: 1/-1;
-            margin: 20px 0 5px;
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.2rem;
+        .nav-logo {
             display: flex;
             align-items: center;
             gap: 10px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            text-decoration: none;
         }
-        .level-header::after {
-            content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.05);
+        .nav-logo .logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+        .nav-links { display: flex; gap: 40px; list-style: none; }
+        .nav-links a {
+            font-size: 0.78rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
         }
+        .nav-links a:hover { color: var(--text); }
+        .nav-links a.active { color: var(--text); border-bottom: 1px solid var(--text); padding-bottom: 2px; }
+
+        /* ─── HERO ─── */
+        .hero {
+            min-height: calc(100vh - 62px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 80px 60px 100px;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.72rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent-dark);
+            margin-bottom: 32px;
+        }
+        .hero-badge::before { content: ''; width: 7px; height: 7px; background: var(--accent); border-radius: 50%; }
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 6.5rem;
+            line-height: 1.0;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 28px;
+            max-width: 720px;
+        }
+        .hero h1 em { font-style: italic; color: var(--accent-dark); }
+        .hero > p {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            line-height: 1.75;
+            max-width: 520px;
+            margin-bottom: 56px;
+        }
+        .feature-list {
+            display: flex;
+            gap: 48px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .feature-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-muted); }
+        .feature-item::before { content: '✓'; font-size: 0.75rem; color: var(--color-buy); font-weight: 600; }
+
+        /* animated scroll cue */
+        .scroll-cue {
+            position: absolute;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.68rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+        .scroll-cue span { animation: nudge 2s ease-in-out infinite; display: block; }
+        .scroll-line { width: 1px; height: 36px; background: linear-gradient(to bottom, var(--accent), transparent); }
+        @keyframes nudge { 0%,100%{transform:translateY(0)}50%{transform:translateY(5px)} }
+
+        /* ─── SEARCH SECTION ─── */
+        .search-section {
+            background: #faf9f6;
+            border-bottom: 1px solid var(--border);
+            padding: 72px 60px 64px;
+        }
+        .search-inner { max-width: 660px; margin: 0 auto; }
+        .search-eyebrow {
+            font-size: 0.72rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        .search-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            margin-bottom: 6px;
+        }
+        .search-sub { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 32px; }
+        .search-row {
+            display: flex;
+            border: 1px solid var(--text);
+            background: white;
+            margin-bottom: 12px;
+        }
+        .search-row input {
+            flex: 1;
+            padding: 18px 24px;
+            font-size: 1.05rem;
+            font-family: 'Inter', sans-serif;
+            border: none;
+            outline: none;
+            background: transparent;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text);
+        }
+        .search-row input::placeholder { color: var(--text-muted); text-transform: none; letter-spacing: 0; }
+        .search-row button {
+            padding: 18px 36px;
+            background: var(--text);
+            color: white;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.78rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .search-row button:hover { background: #333; }
+        .search-hint { font-size: 0.82rem; color: var(--text-muted); }
+
+        .loading-state { display: none; padding: 32px 0; }
+        .loading-bar { width: 100%; height: 1px; background: var(--border); position: relative; overflow: hidden; margin-bottom: 14px; }
+        .loading-bar::after { content: ''; position: absolute; left: -40%; width: 40%; height: 100%; background: var(--accent); animation: load 1.2s ease-in-out infinite; }
+        @keyframes load { to { left: 100%; } }
+        .loading-text { font-size: 0.8rem; color: var(--text-muted); letter-spacing: 0.06em; }
+        .error-box { display: none; padding: 14px 18px; background: #fef2f2; border: 1px solid #fca5a5; color: var(--color-sell); font-size: 0.88rem; margin-top: 16px; }
+
+        /* ─── DASHBOARD ─── */
+        #dashboard { display: none; }
+
+        .rec-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 36px 60px;
+            border-bottom: 1px solid var(--border);
+            background: white;
+        }
+        .rec-label { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+        .rec-verdict { font-family: 'Playfair Display', serif; font-size: 3.2rem; font-weight: 700; }
+        .rec-score { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; }
+        .rec-right { text-align: right; }
+        .rec-company { font-family: 'Playfair Display', serif; font-size: 1.5rem; }
+        .rec-meta { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+
+        .dashboard-wrap { padding: 0 60px 80px; }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            margin: 40px 0;
+        }
+        .metric-card { background: white; padding: 28px 24px; }
+        .metric-card-title { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 18px; }
+
+        .metric-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+        .metric-row:last-child { border-bottom: none; }
+        .metric-row .lbl { color: var(--text-muted); }
+        .metric-row .val { font-weight: 500; color: var(--text); }
+        .val.pos { color: var(--color-buy); }
+        .val.neg { color: var(--color-sell); }
+
+        .signal-wrap { display: flex; flex-direction: column; gap: 4px; }
+        .signal-group-title { font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-top: 10px; }
+        .signal-group-title:first-child { margin-top: 0; }
+        .signal-tag { display: inline-block; padding: 3px 9px; font-size: 0.74rem; letter-spacing: 0.04em; border: 1px solid; margin: 2px 2px 0 0; }
+        .s-buy { color: var(--color-buy); border-color: var(--color-buy); background: #f0faf4; }
+        .s-sell { color: var(--color-sell); border-color: var(--color-sell); background: #fdf2f2; }
+        .s-neutral { color: var(--text-muted); border-color: var(--border); }
+
+        .chart-section { border: 1px solid var(--border); margin-bottom: 40px; background: white; }
+        .chart-header { padding: 16px 24px; border-bottom: 1px solid var(--border); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+
+        .bottom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 40px; }
+        .bottom-card { background: white; padding: 28px 24px; }
+
+        .price-group-title { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin: 16px 0 8px; }
+        .price-group-title:first-child { margin-top: 0; }
+        .price-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+        .price-item:last-child { border-bottom: none; }
+        .price-item .pi-label { color: var(--text-muted); }
+
+        .reason-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; }
+        .reason-item:last-child { border-bottom: none; }
+        .reason-item::before { content: '—'; color: var(--accent); flex-shrink: 0; }
+
+        footer { border-top: 1px solid var(--border); padding: 22px 60px; display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); }
     </style>
 </head>
 <body>
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-    <div class="bg-orb orb-3"></div>
 
-    <div class="container">
-        <header>
-            <h1>Quant Bot</h1>
-            <p>Institutional-Grade AI Stock Analysis</p>
-        </header>
+<nav>
+    <a class="nav-logo" href="#"><span class="logo-dot"></span>Quant Bot</a>
+    <ul class="nav-links">
+        <li><a href="#">Methodology</a></li>
+        <li><a href="#">Institutional</a></li>
+        <li><a href="#" class="active">Terminal Access</a></li>
+    </ul>
+</nav>
 
-        <div class="search-box">
-            <input type="text" id="symbolInput" placeholder="Enter symbol (e.g. AAPL, SBIN.NS)" value="AAPL">
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-badge">Institutional-Grade</div>
+    <h1>AI Stock<br><em>Analysis</em></h1>
+    <p>Enter any ticker symbol and receive comprehensive quantitative analysis — powered by algorithms used at top-tier institutions.</p>
+    <div class="feature-list">
+        <div class="feature-item">Real-time data</div>
+        <div class="feature-item">Deep fundamentals</div>
+        <div class="feature-item">AI signals</div>
+        <div class="feature-item">ML predictions</div>
+        <div class="feature-item">Price levels</div>
+    </div>
+    <div class="scroll-cue">
+        <div class="scroll-line"></div>
+        <span>Scroll to analyze</span>
+    </div>
+</section>
+
+<!-- SEARCH -->
+<section class="search-section">
+    <div class="search-inner">
+        <div class="search-eyebrow">Run an Analysis</div>
+        <div class="search-title">Enter a Ticker Symbol</div>
+        <div class="search-sub">Supports US, Indian (NSE/BSE), and all global exchanges.</div>
+        <div class="search-row">
+            <input type="text" id="symbolInput" placeholder="e.g. AAPL, SBIN, TSLA" value="AAPL">
             <button onclick="analyze()">Analyze</button>
         </div>
-
-        <div id="loading" class="loading" style="display: none;">
-            <div class="spinner"></div>
+        <div class="search-hint">Press Enter or click Analyze to start.</div>
+        <div class="loading-state" id="loading">
+            <div class="loading-bar"></div>
             <div class="loading-text">Running full market analysis...</div>
         </div>
+        <div class="error-box" id="error"></div>
+    </div>
+</section>
 
-        <div id="error" class="error" style="display: none;"></div>
-
-        <div id="dashboard" class="dashboard">
-            <div id="recommendationBox" class="recommendation-box"></div>
-
-            <div class="grid">
-                <div class="card">
-                    <h3>📈 Market Quote</h3>
-                    <div id="quoteMetrics"></div>
-                </div>
-
-                <div class="card">
-                    <h3>🔧 Technical Indicators</h3>
-                    <div id="technicalMetrics"></div>
-                </div>
-
-                <div class="card">
-                    <h3>📊 Live Signals</h3>
-                    <div id="signalsList"></div>
-                </div>
-
-                <div class="card">
-                    <h3>💰 Fundamentals</h3>
-                    <div id="fundamentalMetrics"></div>
-                </div>
-            </div>
-
-            <div class="chart-container">
-                <div id="priceChart"></div>
-            </div>
-
-            <div class="grid">
-                <div class="card">
-                    <h3>🤖 AI Prediction Model</h3>
-                    <div id="mlPrediction"></div>
-                </div>
-
-                <div class="card">
-                    <h3>📋 Analysis Breakdown</h3>
-                    <ul id="reasonsList" class="reasons-list"></ul>
-                </div>
-            </div>
-
-            <div class="card" style="margin-top: 25px;">
-                <h3>🎯 Strategic Price Levels</h3>
-                <div id="priceLevels" class="price-levels"></div>
-            </div>
+<!-- DASHBOARD -->
+<div id="dashboard">
+    <div class="rec-banner">
+        <div>
+            <div class="rec-label">Composite Recommendation</div>
+            <div class="rec-verdict" id="recVerdict">—</div>
+            <div class="rec-score" id="recScore"></div>
+        </div>
+        <div class="rec-right">
+            <div class="rec-company" id="companyName">—</div>
+            <div class="rec-meta" id="companyMeta"></div>
         </div>
     </div>
 
-    <script>
-        async function analyze() {
-            const symbol = document.getElementById('symbolInput').value.trim();
-            if (!symbol) return;
+    <div class="dashboard-wrap">
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-card-title">Market Quote</div>
+                <div id="quoteMetrics"></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-card-title">Technical Indicators</div>
+                <div id="technicalMetrics"></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-card-title">Live Signals</div>
+                <div id="signalsList" class="signal-wrap"></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-card-title">Fundamentals</div>
+                <div id="fundamentalMetrics"></div>
+            </div>
+        </div>
 
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('dashboard').classList.remove('active');
-            document.getElementById('error').style.display = 'none';
+        <div class="chart-section">
+            <div class="chart-header">Price History — 2 Year</div>
+            <div id="priceChart"></div>
+        </div>
 
-            try {
-                // Fetch analysis
-                const analysisRes = await fetch(`/analyze/${symbol}`);
-                const analysisData = await analysisRes.json();
+        <div class="bottom-grid">
+            <div class="bottom-card">
+                <div class="metric-card-title">AI Prediction Model</div>
+                <div id="mlPrediction"></div>
+            </div>
+            <div class="bottom-card">
+                <div class="metric-card-title">Analysis Breakdown</div>
+                <div id="reasonsList"></div>
+            </div>
+            <div class="bottom-card">
+                <div class="metric-card-title">Strategic Price Levels</div>
+                <div id="priceLevels"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-                if (!analysisData.success) {
-                    throw new Error(analysisData.error);
+<footer>
+    <span>© 2026 Quant Bot — For informational purposes only. Not financial advice.</span>
+    <span>Powered by yfinance · Scikit-learn · Plotly</span>
+</footer>
+
+<script>
+    async function analyze() {
+        const symbol = document.getElementById('symbolInput').value.trim();
+        if (!symbol) return;
+
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('error').style.display = 'none';
+
+        try {
+            const analysisRes = await fetch(`/analyze/${symbol}`);
+            const analysisData = await analysisRes.json();
+            if (!analysisData.success) throw new Error(analysisData.error);
+
+            const chartRes = await fetch(`/historical/${symbol}`);
+            const chartData = await chartRes.json();
+
+            renderDashboard(analysisData.data, chartData.data);
+        } catch (err) {
+            document.getElementById('error').textContent = `Error: ${err.message}`;
+            document.getElementById('error').style.display = 'block';
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
+
+    function renderDashboard(data, chartData) {
+        const dash = document.getElementById('dashboard');
+        dash.style.display = 'block';
+        dash.scrollIntoView({ behavior: 'smooth' });
+
+        const rec = data.recommendation;
+        const recColors = { 'STRONG BUY': 'var(--color-buy)', 'BUY': 'var(--color-buy)', 'HOLD': 'var(--color-hold)', 'SELL': 'var(--color-sell)', 'STRONG SELL': 'var(--color-sell)' };
+        document.getElementById('recVerdict').textContent = rec.recommendation;
+        document.getElementById('recVerdict').style.color = recColors[rec.recommendation] || 'var(--text)';
+        document.getElementById('recScore').textContent = `Composite Confidence Score: ${rec.score > 0 ? '+' : ''}${rec.score.toFixed(1)}`;
+
+        const q = data.quote;
+        document.getElementById('companyName').textContent = q.name || data.symbol;
+        document.getElementById('companyMeta').textContent = `${q.sector || ''} · ${data.symbol}`;
+
+        const cc = q.change >= 0 ? 'pos' : 'neg';
+        const cs = q.change >= 0 ? '+' : '';
+        document.getElementById('quoteMetrics').innerHTML = `
+            <div class="metric-row"><span class="lbl">Asset</span><span class="val">${data.symbol}</span></div>
+            <div class="metric-row"><span class="lbl">Price</span><span class="val" style="font-size:1.1rem">$${q.price.toFixed(2)}</span></div>
+            <div class="metric-row"><span class="lbl">Change</span><span class="val ${cc}">${cs}$${q.change.toFixed(2)} (${cs}${q.change_pct.toFixed(2)}%)</span></div>
+            <div class="metric-row"><span class="lbl">Sector</span><span class="val" style="font-size:0.8rem;text-align:right">${q.sector || 'N/A'}</span></div>
+            <div class="metric-row"><span class="lbl">P/E Ratio</span><span class="val">${data.quote.pe_ratio || 'N/A'}</span></div>
+        `;
+
+        const t = data.technicals;
+        document.getElementById('technicalMetrics').innerHTML = `
+            <div class="metric-row"><span class="lbl">SMA 20</span><span class="val">$${t.sma_20?.toFixed(2) || 'N/A'}</span></div>
+            <div class="metric-row"><span class="lbl">SMA 50</span><span class="val">$${t.sma_50?.toFixed(2) || 'N/A'}</span></div>
+            <div class="metric-row"><span class="lbl">SMA 200</span><span class="val">$${t.sma_200?.toFixed(2) || 'N/A'}</span></div>
+            <div class="metric-row"><span class="lbl">RSI (14)</span><span class="val ${t.rsi > 70 ? 'neg' : t.rsi < 30 ? 'pos' : ''}">${t.rsi?.toFixed(2) || 'N/A'}</span></div>
+            <div class="metric-row"><span class="lbl">MACD</span><span class="val">${t.macd?.toFixed(4) || 'N/A'}</span></div>
+            <div class="metric-row"><span class="lbl">Stochastic</span><span class="val">K=${t.stoch_k?.toFixed(2) || 'N/A'}</span></div>
+        `;
+
+        let signalsHtml = '';
+        for (const [category, signals] of Object.entries(data.signals)) {
+            if (signals.length > 0) {
+                signalsHtml += `<div class="signal-group-title">${category}</div>`;
+                for (const [type, desc] of signals) {
+                    const cls = type.includes('BUY')||type.includes('BULLISH')||type.includes('OVERSOLD') ? 's-buy' :
+                                type.includes('SELL')||type.includes('BEARISH')||type.includes('OVERBOUGHT') ? 's-sell' : 's-neutral';
+                    signalsHtml += `<span class="signal-tag ${cls}" title="${desc}">${type}</span>`;
                 }
-
-                // Fetch chart data
-                const chartRes = await fetch(`/historical/${symbol}`);
-                const chartData = await chartRes.json();
-
-                renderDashboard(analysisData.data, chartData.data);
-            } catch (err) {
-                document.getElementById('error').textContent = `Error: ${err.message}`;
-                document.getElementById('error').style.display = 'block';
-            } finally {
-                document.getElementById('loading').style.display = 'none';
             }
         }
+        document.getElementById('signalsList').innerHTML = signalsHtml || '<span style="font-size:0.82rem;color:var(--text-muted)">No clear signals detected</span>';
 
-        function renderDashboard(data, chartData) {
-            const dash = document.getElementById('dashboard');
-            dash.classList.add('active');
+        const f = data.fundamentals;
+        document.getElementById('fundamentalMetrics').innerHTML = `
+            <div class="metric-row"><span class="lbl">Profit Margin</span><span class="val">${(f.profitability?.profit_margin*100||0).toFixed(2)}%</span></div>
+            <div class="metric-row"><span class="lbl">ROE</span><span class="val">${(f.profitability?.roe*100||0).toFixed(2)}%</span></div>
+            <div class="metric-row"><span class="lbl">Revenue Growth</span><span class="val ${f.growth?.revenue_growth_yoy>0?'pos':'neg'}">${(f.growth?.revenue_growth_yoy*100||0).toFixed(2)}%</span></div>
+            <div class="metric-row"><span class="lbl">Debt/Equity</span><span class="val">${f.financial_health?.debt_to_equity||'N/A'}</span></div>
+            <div class="metric-row"><span class="lbl">Current Ratio</span><span class="val">${f.financial_health?.current_ratio||'N/A'}</span></div>
+        `;
 
-            // Recommendation
-            const rec = data.recommendation;
-            const recColors = {
-                'STRONG BUY': 'var(--color-strong-buy)',
-                'BUY': 'var(--color-buy)',
-                'HOLD': 'var(--color-hold)',
-                'SELL': 'var(--color-sell)',
-                'STRONG SELL': 'var(--color-strong-sell)'
-            };
-            document.getElementById('recommendationBox').innerHTML = `
-                <div class="recommendation-content">
-                    <h2 style="color: ${recColors[rec.recommendation] || '#fff'}">${rec.recommendation}</h2>
-                    <div class="score">Composite Confidence Score: ${rec.score > 0 ? '+' : ''}${rec.score.toFixed(1)}</div>
-                </div>
-            `;
+        const ml = data.ml_prediction;
+        document.getElementById('mlPrediction').innerHTML = `
+            <div class="metric-row"><span class="lbl">Direction</span><span class="val ${ml.direction==='UP'?'pos':'neg'}">${ml.direction}</span></div>
+            <div class="metric-row"><span class="lbl">Confidence</span><span class="val">${ml.confidence}</span></div>
+            <div class="metric-row"><span class="lbl">Expected Move</span><span class="val ${ml.predicted_return>=0?'pos':'neg'}">${(ml.predicted_return*100).toFixed(2)}%</span></div>
+            <div class="metric-row"><span class="lbl">Model R²</span><span class="val">${(data.model_metrics.r2*100).toFixed(2)}%</span></div>
+        `;
 
-            // Quote
-            const q = data.quote;
-            const changeClass = q.change >= 0 ? 'positive' : 'negative';
-            const changeSign = q.change >= 0 ? '+' : '';
-            document.getElementById('quoteMetrics').innerHTML = `
-                <div class="metric"><span class="metric-label">Asset</span><span class="metric-value">${data.symbol}</span></div>
-                <div class="metric"><span class="metric-label">Company</span><span class="metric-value" style="text-align:right;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${q.name}">${q.name}</span></div>
-                <div class="metric"><span class="metric-label">Sector</span><span class="metric-value">${q.sector}</span></div>
-                <div class="metric"><span class="metric-label">Price</span><span class="metric-value" style="font-size:1.1rem;color:#fff">$${q.price.toFixed(2)}</span></div>
-                <div class="metric"><span class="metric-label">Change</span><span class="metric-value ${changeClass}">${changeSign}$${q.change.toFixed(2)} (${changeSign}${q.change_pct.toFixed(2)}%)</span></div>
-            `;
+        document.getElementById('reasonsList').innerHTML = rec.reasons.slice(0,8)
+            .map(r => `<div class="reason-item">${r}</div>`).join('');
 
-            // Technicals
-            const t = data.technicals;
-            document.getElementById('technicalMetrics').innerHTML = `
-                <div class="metric"><span class="metric-label">SMA 20</span><span class="metric-value">$${t.sma_20?.toFixed(2) || 'N/A'}</span></div>
-                <div class="metric"><span class="metric-label">SMA 50</span><span class="metric-value">$${t.sma_50?.toFixed(2) || 'N/A'}</span></div>
-                <div class="metric"><span class="metric-label">SMA 200</span><span class="metric-value">$${t.sma_200?.toFixed(2) || 'N/A'}</span></div>
-                <div class="metric"><span class="metric-label">RSI (14)</span><span class="metric-value ${t.rsi > 70 ? 'negative' : t.rsi < 30 ? 'positive' : ''}">${t.rsi?.toFixed(2) || 'N/A'}</span></div>
-                <div class="metric"><span class="metric-label">MACD</span><span class="metric-value">${t.macd?.toFixed(4) || 'N/A'}</span></div>
-                <div class="metric"><span class="metric-label">Stochastic</span><span class="metric-value">K=${t.stoch_k?.toFixed(2) || 'N/A'}</span></div>
-            `;
+        const pl = data.price_levels;
+        document.getElementById('priceLevels').innerHTML = `
+            <div class="price-group-title">Accumulation Zones</div>
+            ${pl.entry_zones.map(l=>`<div class="price-item"><span class="pi-label">${l.label}</span><span>${'$'+l.price.toFixed(2)}</span></div>`).join('')}
+            <div class="price-group-title">Take Profit Targets</div>
+            ${pl.targets.map(l=>`<div class="price-item"><span class="pi-label">${l.label}</span><span>${'$'+l.price.toFixed(2)}</span></div>`).join('')}
+            <div class="price-group-title">Stop Loss</div>
+            ${pl.stop_losses.map(l=>`<div class="price-item"><span class="pi-label">${l.label}</span><span>${'$'+l.price.toFixed(2)}</span></div>`).join('')}
+        `;
 
-            // Signals
-            let signalsHtml = '';
-            for (const [category, signals] of Object.entries(data.signals)) {
-                if (signals.length > 0) {
-                    signalsHtml += `<div style="margin-bottom: 12px;">
-                        <strong style="color:var(--text-muted);text-transform:uppercase;font-size:0.75rem;letter-spacing:1px;">${category}</strong><br>`;
-                    for (const [type, desc] of signals) {
-                        const cls = type.includes('BUY') || type.includes('BULLISH') || type.includes('OVERSOLD') ? 'signal-buy' :
-                                   type.includes('SELL') || type.includes('BEARISH') || type.includes('OVERBOUGHT') ? 'signal-sell' : 'signal-neutral';
-                        signalsHtml += `<span class="signal-tag ${cls}" title="${desc}">${type}</span> `;
-                    }
-                    signalsHtml += `</div>`;
-                }
-            }
-            document.getElementById('signalsList').innerHTML = signalsHtml || '<div style="color:var(--text-muted);text-align:center;padding:20px;">No clear market signals detected</div>';
+        Plotly.newPlot('priceChart', [
+            { x: chartData.dates, y: chartData.close, type:'scatter', mode:'lines', name:'Price', line:{color:'#1a1a18',width:1.5}, fill:'tozeroy', fillcolor:'rgba(26,26,24,0.04)' },
+            { x: chartData.dates, y: chartData.sma_20, type:'scatter', mode:'lines', name:'SMA 20', line:{color:'#c8a96e',width:1.5,dash:'dot'} },
+            { x: chartData.dates, y: chartData.sma_50, type:'scatter', mode:'lines', name:'SMA 50', line:{color:'#8b5e2a',width:1.5,dash:'dash'} }
+        ], {
+            paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+            font:{color:'#7a7971',family:'Inter',size:11},
+            xaxis:{gridcolor:'#e0ddd6',zeroline:false},
+            yaxis:{gridcolor:'#e0ddd6',zeroline:false},
+            margin:{t:20,l:60,r:20,b:40},
+            showlegend:true, legend:{orientation:'h',y:1.1,font:{color:'#7a7971'}},
+            hovermode:'x unified'
+        }, { responsive:true, displayModeBar:false });
+    }
 
-            // Fundamentals
-            const f = data.fundamentals;
-            document.getElementById('fundamentalMetrics').innerHTML = `
-                <div class="metric"><span class="metric-label">P/E Ratio</span><span class="metric-value">${data.quote.pe_ratio || 'N/A'}</span></div>
-                <div class="metric"><span class="metric-label">Profit Margin</span><span class="metric-value">${(f.profitability?.profit_margin * 100 || 0).toFixed(2)}%</span></div>
-                <div class="metric"><span class="metric-label">ROE</span><span class="metric-value">${(f.profitability?.roe * 100 || 0).toFixed(2)}%</span></div>
-                <div class="metric"><span class="metric-label">Revenue Growth</span><span class="metric-value ${f.growth?.revenue_growth_yoy > 0 ? 'positive' : 'negative'}">${(f.growth?.revenue_growth_yoy * 100 || 0).toFixed(2)}%</span></div>
-                <div class="metric"><span class="metric-label">Debt/Equity</span><span class="metric-value">${f.financial_health?.debt_to_equity || 'N/A'}</span></div>
-            `;
-
-            // ML Prediction
-            const ml = data.ml_prediction;
-            document.getElementById('mlPrediction').innerHTML = `
-                <div class="metric"><span class="metric-label">Predicted Direction</span><span class="metric-value ${ml.direction === 'UP' ? 'positive' : 'negative'}">${ml.direction}</span></div>
-                <div class="metric"><span class="metric-label">Model Confidence</span><span class="metric-value">${ml.confidence}</span></div>
-                <div class="metric"><span class="metric-label">Expected Next Day</span><span class="metric-value ${ml.predicted_return >= 0 ? 'positive' : 'negative'}">${(ml.predicted_return * 100).toFixed(2)}%</span></div>
-                <div class="metric"><span class="metric-label">Historical Accuracy (R²)</span><span class="metric-value">${(data.model_metrics.r2 * 100).toFixed(2)}%</span></div>
-            `;
-
-            // Reasons
-            document.getElementById('reasonsList').innerHTML = rec.reasons.slice(0, 8).map(r => `<li>${r}</li>`).join('');
-
-            // Price Levels
-            const pl = data.price_levels;
-            document.getElementById('priceLevels').innerHTML = `
-                <div class="level-header" style="color:var(--color-buy)">Accumulation Zones</div>
-                ${pl.entry_zones.map(l => `<div class="price-level"><div class="label">${l.label}</div><div class="price">$${l.price.toFixed(2)}</div></div>`).join('')}
-                
-                <div class="level-header" style="color:var(--color-hold)">Take Profit Targets</div>
-                ${pl.targets.map(l => `<div class="price-level"><div class="label">${l.label}</div><div class="price">$${l.price.toFixed(2)}</div></div>`).join('')}
-                
-                <div class="level-header" style="color:var(--color-strong-sell)">Risk Management</div>
-                ${pl.stop_losses.map(l => `<div class="price-level"><div class="label">${l.label}</div><div class="price">$${l.price.toFixed(2)}</div></div>`).join('')}
-            `;
-
-            // Price Chart
-            const trace1 = {
-                x: chartData.dates,
-                y: chartData.close,
-                type: 'scatter',
-                mode: 'lines',
-                name: 'Price',
-                line: { color: '#e2e8f0', width: 2 },
-                fill: 'tozeroy',
-                fillcolor: 'rgba(226, 232, 240, 0.05)'
-            };
-            const trace2 = {
-                x: chartData.dates,
-                y: chartData.sma_20,
-                type: 'scatter',
-                mode: 'lines',
-                name: 'SMA 20',
-                line: { color: '#06b6d4', width: 1.5, dash: 'dot' }
-            };
-            const trace3 = {
-                x: chartData.dates,
-                y: chartData.sma_50,
-                type: 'scatter',
-                mode: 'lines',
-                name: 'SMA 50',
-                line: { color: '#f59e0b', width: 1.5, dash: 'dash' }
-            };
-
-            Plotly.newPlot('priceChart', [trace1, trace2, trace3], {
-                paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: '#94a3b8', family: 'Inter' },
-                xaxis: { gridcolor: 'rgba(255,255,255,0.05)', zeroline: false },
-                yaxis: { gridcolor: 'rgba(255,255,255,0.05)', zeroline: false },
-                margin: { t: 10, l: 50, r: 20, b: 40 },
-                showlegend: true,
-                legend: { orientation: 'h', y: 1.1, font: { color: '#94a3b8' } },
-                hovermode: 'x unified'
-            }, { responsive: true, displayModeBar: false });
-        }
-
-        // Auto-analyze AAPL on load
-        document.addEventListener('DOMContentLoaded', () => analyze());
-
-        // Enter key to search
-        document.getElementById('symbolInput').addEventListener('keypress', (e) => {
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('symbolInput').addEventListener('keypress', e => {
             if (e.key === 'Enter') analyze();
         });
-    </script>
+    });
+</script>
 </body>
 </html>
