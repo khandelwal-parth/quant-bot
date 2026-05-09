@@ -66,12 +66,7 @@ def get_daily_data(symbol: str, output_size: str = "compact") -> dict:
     """
     try:
         import yfinance as yf
-        import requests
-        
-        session = requests.Session()
-        session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'})
-        
-        ticker = yf.Ticker(symbol, session=session)
+        ticker = yf.Ticker(symbol)
         hist = ticker.history(period="2y")
         if hist.empty:
             raise ValueError(f"No data returned for {symbol}")
@@ -115,13 +110,7 @@ def get_company_info(symbol: str) -> dict:
     """Fetch company profile and fundamental data using yfinance."""
     try:
         import yfinance as yf
-        import requests
-        
-        # Use a session with a custom User-Agent to avoid being blocked by Yahoo
-        session = requests.Session()
-        session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'})
-        
-        ticker = yf.Ticker(symbol, session=session)
+        ticker = yf.Ticker(symbol)
         info = ticker.info
 
         # Helper to handle None values
