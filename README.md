@@ -2,7 +2,7 @@
 
 An AI-powered stock analysis system that delivers institutional-grade analysis in seconds.
 
-🔗 **Live Demo: [QUANT-BOT](https://quant-bot-1-u9n7.onrender.com/)**
+🔗 **Live Demo: [QUANT-BOT](https://quant-bot-ma3u.onrender.com/)**
 
 ## What It Does
 
