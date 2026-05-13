@@ -116,7 +116,6 @@
         .feature-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-muted); }
         .feature-item::before { content: '✓'; font-size: 0.75rem; color: var(--color-buy); font-weight: 600; }
 
-        /* animated scroll cue */
         .scroll-cue {
             position: absolute;
             bottom: 32px;
@@ -187,7 +186,59 @@
             transition: background 0.2s;
         }
         .search-row button:hover { background: #333; }
-        .search-hint { font-size: 0.82rem; color: var(--text-muted); }
+
+        /* ─── SEARCH HINT + INFO ICON ─── */
+        .search-hint {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .info-icon {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid var(--text-muted);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            cursor: default;
+            flex-shrink: 0;
+            line-height: 1;
+            user-select: none;
+        }
+        .info-icon:hover { border-color: var(--accent-dark); color: var(--accent-dark); }
+        .info-tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text);
+            color: #f5f4f0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.76rem;
+            line-height: 1.6;
+            padding: 10px 14px;
+            width: 230px;
+            z-index: 999;
+            pointer-events: none;
+            white-space: normal;
+        }
+        .info-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: var(--text);
+        }
+        .info-icon:hover .info-tooltip { display: block; }
 
         .loading-state { display: none; padding: 32px 0; }
         .loading-bar { width: 100%; height: 1px; background: var(--border); position: relative; overflow: hidden; margin-bottom: 14px; }
@@ -300,7 +351,13 @@
             <input type="text" id="symbolInput" placeholder="e.g. AAPL, SBIN, TSLA" value="AAPL">
             <button onclick="analyze()">Analyze</button>
         </div>
-        <div class="search-hint">Press Enter or click Analyze to start.</div>
+        <div class="search-hint">
+            Press Enter or click Analyze to start.
+            <span class="info-icon">
+                i
+                <span class="info-tooltip">If the analysis doesn't load, press Analyze again — the server may be waking up from sleep on first visit.</span>
+            </span>
+        </div>
         <div class="loading-state" id="loading">
             <div class="loading-bar"></div>
             <div class="loading-text">Running full market analysis...</div>
