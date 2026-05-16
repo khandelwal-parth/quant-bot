@@ -27,25 +27,25 @@ def check_and_send_alerts(symbol: str, analysis_result: dict):
     """
     Check analysis result for alert conditions and send Discord alerts.
     Call this in your /analyze route after analysis completes.
-
-    Alerts sent:
-    - RSI overbought (>80) or oversold (<20)
-    - Strong BUY or SELL recommendation
-    - Price near a key level (target or stop loss)
     """
     if not DISCORD_WEBHOOK_URL:
         return
 
     try:
-        tech = analysis_result.get("technical_indicators", {})
+        tech = analysis_result.get("technicals", {})
         rec = analysis_result.get("recommendation", {})
         quote = analysis_result.get("quote", {})
         levels = analysis_result.get("price_levels", {})
 
         rsi = tech.get("rsi")
-        action = rec.get("action", "HOLD")
+        action = rec.get("recommendation", "HOLD")
         price = quote.get("price", 0)
-        company = quote.get("company", symbol)
+        name = quote.get("name", symbol)
+
+        targets = levels.get("targets", [])
+        stop_losses = levels.get("stop_losses", [])
+        t1 = targets[0]["price"] if targets else "N/A"
+        stop = stop_losses[1]["price"] if len(stop_losses) > 1 else "N/A"
 
         # ── Alert 1: RSI Overbought ────────────────────────────────────────
         if rsi and rsi > 80:
@@ -53,7 +53,7 @@ def check_and_send_alerts(symbol: str, analysis_result: dict):
             if not was_alert_sent_recently(symbol, alert_type, within_hours=12):
                 msg = (
                     f"🔴 **OVERBOUGHT ALERT — {symbol}**\n"
-                    f"**{company}**\n"
+                    f"**{name}**\n"
                     f"RSI: `{rsi:.1f}` (>80 = overbought)\n"
                     f"Current Price: `${price:.2f}`\n"
                     f"⚠️ Consider taking profit or tightening stop loss."
@@ -68,7 +68,7 @@ def check_and_send_alerts(symbol: str, analysis_result: dict):
             if not was_alert_sent_recently(symbol, alert_type, within_hours=12):
                 msg = (
                     f"🟢 **OVERSOLD ALERT — {symbol}**\n"
-                    f"**{company}**\n"
+                    f"**{name}**\n"
                     f"RSI: `{rsi:.1f}` (<20 = oversold)\n"
                     f"Current Price: `${price:.2f}`\n"
                     f"📈 Potential bounce/entry opportunity."
@@ -81,12 +81,9 @@ def check_and_send_alerts(symbol: str, analysis_result: dict):
         if action == "BUY":
             alert_type = f"buy_{symbol}"
             if not was_alert_sent_recently(symbol, alert_type, within_hours=6):
-                targets = levels.get("targets", {})
-                t1 = targets.get("target_1", "N/A")
-                stop = levels.get("stop_loss", {}).get("standard", "N/A")
                 msg = (
                     f"✅ **BUY SIGNAL — {symbol}**\n"
-                    f"**{company}**\n"
+                    f"**{name}**\n"
                     f"Current Price: `${price:.2f}`\n"
                     f"Target 1: `${t1}`\n"
                     f"Stop Loss: `${stop}`\n"
@@ -102,7 +99,7 @@ def check_and_send_alerts(symbol: str, analysis_result: dict):
             if not was_alert_sent_recently(symbol, alert_type, within_hours=6):
                 msg = (
                     f"🚨 **SELL SIGNAL — {symbol}**\n"
-                    f"**{company}**\n"
+                    f"**{name}**\n"
                     f"Current Price: `${price:.2f}`\n"
                     f"📉 Composite recommendation: **SELL**\n"
                     f"⚠️ Review your position."
