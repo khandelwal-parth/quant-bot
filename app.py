@@ -7,6 +7,7 @@ import sys
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
+from discord_alerts import check_and_send_alerts
 
 load_dotenv()
 
@@ -141,7 +142,7 @@ def analyze_symbol(symbol):
 
         # Save prediction to DB for win rate tracking
         record_prediction(symbol, cleaned_result)
-
+        check_and_send_alerts(symbol, cleaned_result)
         return jsonify({"success": True, "data": cleaned_result})
 
     except Exception as e:
