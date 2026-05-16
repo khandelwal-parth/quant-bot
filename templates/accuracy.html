@@ -357,7 +357,7 @@
                         {% endif %}
                     </td>
                     <td style="color:#888;font-size:12px">
-                        {{ p.predicted_at[:10] }}
+                        {{ p.created_at|string[:10] }}
                     </td>
                 </tr>
                 {% endfor %}
