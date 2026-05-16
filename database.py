@@ -210,7 +210,8 @@ def was_alert_sent_recently(symbol: str, alert_type: str, within_hours: int = 6)
         return False
     finally:
         conn.close()
-
+# Alias for backwards compatibility
+get_all_symbols_accuracy = get_accuracy_stats
 
 # Auto-initialize on import
 init_db()
