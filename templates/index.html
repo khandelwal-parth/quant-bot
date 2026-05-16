@@ -55,7 +55,7 @@
             text-decoration: none;
         }
         .nav-logo .logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
-        .nav-links { display: flex; gap: 40px; list-style: none; }
+        .nav-links { display: flex; gap: 40px; list-style: none; align-items: center; }
         .nav-links a {
             font-size: 0.78rem;
             letter-spacing: 0.12em;
@@ -66,6 +66,21 @@
         }
         .nav-links a:hover { color: var(--text); }
         .nav-links a.active { color: var(--text); border-bottom: 1px solid var(--text); padding-bottom: 2px; }
+
+        /* accuracy link — subtle pill style */
+        .nav-links a.accuracy-link {
+            font-size: 0.72rem;
+            letter-spacing: 0.1em;
+            color: var(--accent-dark);
+            border: 1px solid var(--accent);
+            padding: 4px 12px;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+        .nav-links a.accuracy-link:hover {
+            background: var(--accent);
+            color: white;
+        }
 
         /* ─── HERO ─── */
         .hero {
@@ -320,6 +335,7 @@
         <li><a href="#">Methodology</a></li>
         <li><a href="#">Institutional</a></li>
         <li><a href="#" class="active">Terminal Access</a></li>
+        <li><a href="/accuracy" class="accuracy-link">📊 Accuracy</a></li>
     </ul>
 </nav>
 
