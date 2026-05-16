@@ -3,11 +3,18 @@
 import os
 import json
 import math
+import sys
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Add src to path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from src import data_fetcher, analyzer
+from win_tracker import record_prediction, start_background_checker, get_accuracy_data
 
 
 def clean_for_json(obj):
@@ -27,13 +34,11 @@ def clean_for_json(obj):
     else:
         return str(obj)
 
-# Add src to path for imports
-import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from src import data_fetcher, analyzer
 
 app = Flask(__name__)
+
+# Start background job that checks prediction outcomes every 6 hours
+start_background_checker(interval_hours=6)
 
 
 @app.route("/")
@@ -133,6 +138,10 @@ def analyze_symbol(symbol):
 
         # Clean data for JSON serialization (handle NaN, Infinity)
         cleaned_result = clean_for_json(result)
+
+        # Save prediction to DB for win rate tracking
+        record_prediction(symbol, cleaned_result)
+
         return jsonify({"success": True, "data": cleaned_result})
 
     except Exception as e:
@@ -170,6 +179,20 @@ def get_historical(symbol):
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
+
+
+@app.route("/accuracy")
+def accuracy_page():
+    """Win rate tracking page."""
+    data = get_accuracy_data()
+    return render_template("accuracy.html", data=data)
+
+
+@app.route("/api/accuracy")
+def accuracy_api():
+    """API endpoint for accuracy data (JSON)."""
+    data = get_accuracy_data()
+    return jsonify({"success": True, "data": data})
 
 
 if __name__ == "__main__":
