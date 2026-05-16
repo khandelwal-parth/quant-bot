@@ -357,7 +357,7 @@
                         {% endif %}
                     </td>
                     <td style="color:#888;font-size:12px">
-                        {{ p.created_at|string[:10] }}
+                        {{ p.created_at|string|truncate(10, killwords=True, end='') }}
                     </td>
                 </tr>
                 {% endfor %}
