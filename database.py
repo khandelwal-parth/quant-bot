@@ -130,9 +130,11 @@ def get_accuracy_stats():
                 FROM predictions
             """)
             overall = dict(cur.fetchone())
-            total = overall["total"] or 0
-            correct = overall["correct"] or 0
-            overall["win_rate"] = round((correct / total * 100), 1) if total > 0 else 0
+            overall["total"] = overall["total"] or 0
+            overall["correct"] = overall["correct"] or 0
+            overall["incorrect"] = overall["incorrect"] or 0
+            overall["pending"] = overall["pending"] or 0
+            overall["win_rate"] = round((overall["correct"] / overall["total"] * 100), 1) if overall["total"] > 0 else 0
 
             # Per symbol
             cur.execute("""
