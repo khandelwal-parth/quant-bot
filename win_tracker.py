@@ -10,6 +10,7 @@ from database import (
     get_pending_predictions,
     update_prediction_outcome,
     get_accuracy_stats,
+    get_connection,
 )
 
 
@@ -21,7 +22,9 @@ def record_prediction(symbol, analysis_result):
 
         predicted_direction = ml.get("direction", "UNKNOWN")
         price_at_prediction = quote.get("price", 0)
-        check_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+        # +2 days to avoid same-day and weekend issues
+        check_date = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
 
         save_prediction(
             symbol=symbol,
@@ -34,6 +37,26 @@ def record_prediction(symbol, analysis_result):
         print(f"⚠️ Could not save prediction for {symbol}: {e}")
 
 
+def reschedule_prediction(pred_id, check_date):
+    """Push check date forward by 2 days (for weekends/holidays)."""
+    check_dt = datetime.strptime(check_date, "%Y-%m-%d")
+    new_check = (check_dt + timedelta(days=2)).strftime("%Y-%m-%d")
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE predictions SET check_date = %s WHERE id = %s",
+                (new_check, pred_id)
+            )
+        conn.commit()
+        print(f"📅 Rescheduled prediction {pred_id} from {check_date} to {new_check}")
+    except Exception as e:
+        print(f"⚠️ Failed to reschedule prediction {pred_id}: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
+
 def check_pending_outcomes():
     """Check all unresolved predictions and mark them correct/wrong."""
     pending = get_pending_predictions()
@@ -42,15 +65,17 @@ def check_pending_outcomes():
         return
 
     print(f"📊 Checking {len(pending)} pending predictions...")
+
     for pred in pending:
         try:
             symbol = pred["symbol"]
             price_at_prediction = pred["price_at_prediction"]
             predicted_direction = pred["predicted_direction"]
             check_date = str(pred["check_date"])
+            pred_id = pred["id"]
 
             check_dt = datetime.strptime(check_date, "%Y-%m-%d")
-            end_dt = check_dt + timedelta(days=3)
+            end_dt = check_dt + timedelta(days=4)
 
             ticker = yf.Ticker(symbol)
             hist = ticker.history(
@@ -59,7 +84,8 @@ def check_pending_outcomes():
             )
 
             if hist.empty:
-                print(f"⚠️ No data for {symbol} on {check_date}, skipping.")
+                # No data = weekend or holiday, push forward
+                reschedule_prediction(pred_id, check_date)
                 continue
 
             actual_price = float(hist["Close"].iloc[0])
@@ -67,16 +93,20 @@ def check_pending_outcomes():
             was_correct = actual_direction == predicted_direction
 
             update_prediction_outcome(
-                prediction_id=pred["id"],
+                prediction_id=pred_id,
                 actual_price=actual_price,
                 was_correct=was_correct,
             )
 
             emoji = "✅" if was_correct else "❌"
-            print(f"{emoji} {symbol}: predicted {predicted_direction}, actual {actual_direction} "
-                  f"(${price_at_prediction:.2f} → ${actual_price:.2f})")
+            print(
+                f"{emoji} {symbol}: predicted {predicted_direction}, "
+                f"actual {actual_direction} "
+                f"(${price_at_prediction:.2f} → ${actual_price:.2f})"
+            )
+
         except Exception as e:
-            print(f"⚠️ Error checking {pred['symbol']}: {e}")
+            print(f"⚠️ Error checking {pred.get('symbol', '?')}: {e}")
 
 
 def start_background_checker(interval_hours=6):
@@ -109,9 +139,9 @@ def get_accuracy_data():
 
     return {
         "overall": {
-            "total": overall.get("total", 0),
-            "correct": overall.get("correct", 0),
-            "win_rate": overall.get("win_rate", 0),
+            "total": overall.get("total", 0) or 0,
+            "correct": overall.get("correct", 0) or 0,
+            "win_rate": overall.get("win_rate", 0) or 0,
         },
         "by_direction": {
             "up": {
