@@ -128,6 +128,7 @@ def get_accuracy_stats():
                     SUM(CASE WHEN was_correct = FALSE THEN 1 ELSE 0 END) AS incorrect,
                     SUM(CASE WHEN was_correct IS NULL THEN 1 ELSE 0 END) AS pending
                 FROM predictions
+                WHERE was_correct IS NOT NULL
             """)
             overall = dict(cur.fetchone())
             overall["total"] = overall["total"] or 0
