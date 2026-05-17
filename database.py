@@ -217,3 +217,5 @@ get_all_symbols_accuracy = get_accuracy_stats
 
 # Auto-initialize on import
 init_db()
+
+# already defined above, just making sure it's importable
